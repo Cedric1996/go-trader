@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  trader: 
+    build: .
+    container_name: eztrader
+    ports: 
+      - "3001:3001"
+    command: ["/app/eztrader/eztrader", "test"]
+    environment:
+      - APP_DOMAIN=localhost
+      - ROOT_URL=http://localhost:3001
+      - DB_MONGO_HOST=MONGO:27017
+      - DB_MONGO_PASSWD=eztrader
+      - DB_MONGO_USERNAME=eztrader
+      - DB_MONGO_DB=eztrader
+      - REDIS_URL=redis://redis:6379/0
+      - CRON_ENABLED=false
+
+  mongo:
+    image: mongo:latest
+    container_name: trader_mongo
+    ports:
+      - "27017:27017"
+    volumes: 
+      - ~/Users/cedric/mongo:/data/db
+    command: mongod
+
+  redis:
+    image: redis
+    container_name: trader_redis
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
