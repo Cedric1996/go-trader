@@ -1,5 +1,5 @@
 .vscode
-/eztrader
+/go-trader
 /bin
 /dist
 .DS_Store

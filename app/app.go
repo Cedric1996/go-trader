@@ -10,8 +10,8 @@ package app
 import (
 	"fmt"
 
-	"github.cedric1996.com/eztrader/app/database"
-	"github.cedric1996.com/eztrader/app/fetcher"
+	"github.cedric1996.com/go-trader/app/database"
+	"github.cedric1996.com/go-trader/app/fetcher"
 )
 
 func Init() {

@@ -9,7 +9,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.cedric1996.com/eztrader/app"
+	"github.cedric1996.com/go-trader/app"
 	"github.com/urfave/cli"
 )
 

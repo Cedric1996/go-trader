@@ -7,8 +7,8 @@ FROM golang:1.15-alpine3.13 AS build-env
 RUN apk --no-cache add git  
 
 #Setup repo
-COPY . /app/eztrader
-WORKDIR /app/eztrader
+COPY . /app/go-trader
+WORKDIR /app/go-trader
 
 #Checkout version if set
 # RUN if [ -n "${GITEA_VERSION}" ]; then git checkout "${GITEA_VERSION}"; fi \
@@ -32,4 +32,4 @@ EXPOSE 3001
 # ENV GITEA_CUSTOM /data/gitea
 # VOLUME ["/data"]
 
-CMD ["/app/eztrader/eztrader", "test"]
+CMD ["/app/go-trader/go-trader", "test"]

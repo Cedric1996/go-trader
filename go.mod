@@ -1,4 +1,4 @@
-module github.cedric1996.com/eztrader
+module github.cedric1996.com/go-trader
 
 go 1.14
 

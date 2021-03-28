@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.cedric1996.com/eztrader/cmd"
+	"github.cedric1996.com/go-trader/cmd"
 	"github.com/urfave/cli"
 )
 
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal("Run EzTrader fail!", err)
+		log.Fatal("Run go-trader fail!", err)
 	}
 
 }
