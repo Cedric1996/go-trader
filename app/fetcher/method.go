@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-03-14 22:56:17
+ * @Last Modified time: 2021-03-15 22:31:07
  */
 
 package fetcher
@@ -115,6 +115,61 @@ func GetCurrentPrice(code string) string {
 	res, err := Request(params)
 	if err != nil {
 		return fmt.Errorf("Get current price error.", err).Error()
+	}
+	return res
+}
+
+func GetCallAuction(code string, begin string, end string) string {
+	params := map[string]interface{}{
+		"method":   "get_call_auction",
+		"token":    Token(),
+		"code":     code,
+		"date":     begin,
+		"end_date": end,
+	}
+	res, err := Request(params)
+	if err != nil {
+		return fmt.Errorf("Get call auction with period error.", err).Error()
+	}
+	return res
+}
+
+func GetCurrentTick(code string) string {
+	params := map[string]interface{}{
+		"method": "get_current_tick",
+		"token":  Token(),
+		"code":   code,
+	}
+	res, err := Request(params)
+	if err != nil {
+		return fmt.Errorf("Get current tick error.", err).Error()
+	}
+	return res
+}
+
+func GetCurrentTicks(codes string) string {
+	params := map[string]interface{}{
+		"method": "get_current_ticks",
+		"token":  Token(),
+		"code":   codes,
+	}
+	res, err := Request(params)
+	if err != nil {
+		return fmt.Errorf("Get current tick error.", err).Error()
+	}
+	return res
+}
+
+func GetFundInfo(code string, date string) string {
+	params := map[string]interface{}{
+		"method": "get_fund_info",
+		"token":  Token(),
+		"code":   code,
+		"date":   date,
+	}
+	res, err := Request(params)
+	if err != nil {
+		return fmt.Errorf("Get fundI info error.", err).Error()
 	}
 	return res
 }

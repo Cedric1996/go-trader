@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-13 14:54:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-03-14 13:09:23
+ * @Last Modified time: 2021-03-18 15:50:14
  */
 package cmd
 
@@ -28,11 +28,29 @@ var (
 			},
 		},
 	}
+	CmdServer = cli.Command{
+		Name:        "server",
+		Usage:       "run EzTrade server",
+		Description: `EzTrade Server cmd helps you run EzTrade server`,
+		Action:      runServer,
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "server, s",
+				Value: "",
+				Usage: "run EzTrade server",
+			},
+		},
+	}
 )
 
 func runTest(c *cli.Context) error {
 	fmt.Println("test cmd")
 	app.Init()
 
+	return nil
+}
+
+func runServer(c *cli.Context) error {
+	app.RunServer()
 	return nil
 }
