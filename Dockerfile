@@ -13,7 +13,7 @@ WORKDIR /app/go-trader
 #Checkout version if set
 # RUN if [ -n "${GITEA_VERSION}" ]; then git checkout "${GITEA_VERSION}"; fi \
 #  && make clean-all build
-RUN go mod download
+# RUN go mod download
 RUN go build .
 
 #FROM alpine:3.13

@@ -2,7 +2,7 @@ version: '3'
 
 services:
   trader: 
-    build: .
+    image: go-trader/go-trader:latest
     container_name: go-trader
     ports: 
       - "3001:3001"
