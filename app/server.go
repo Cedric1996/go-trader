@@ -31,7 +31,7 @@ func post(w http.ResponseWriter, req *http.Request) {
 	result := &CreateRepoResposne{}
 	err := json.NewDecoder(req.Body).Decode(&result)
 	if err != nil {
-		fmt.Errorf("Get POST with error: %s", err)
+		fmt.Errorf("get POST with error: %s", err)
 		return
 	}
 	fmt.Printf("Get POST: %s %s %s\n", result.User, result.ClientMachine, result.Server)

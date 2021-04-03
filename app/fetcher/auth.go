@@ -26,6 +26,6 @@ func Token() string {
 	if err != nil {
 		return fmt.Sprintf("error: %s", err)
 	}
-	token = t
-	return t
+	token = string(t)
+	return token
 }

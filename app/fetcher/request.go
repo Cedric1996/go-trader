@@ -34,10 +34,10 @@ var (
 // }
 
 // Request create a http request
-func Request(body map[string]interface{}) (string, error) {
+func Request(body map[string]interface{}) ([]byte, error) {
 	bodyStr, err := json.Marshal(body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", JQDATA_URL, strings.NewReader(string(bodyStr)))
 	resp, err := client.Do(req)
@@ -48,7 +48,7 @@ func Request(body map[string]interface{}) (string, error) {
 	}()
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(res), nil
+	return res, nil
 }
