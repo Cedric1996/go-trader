@@ -14,7 +14,7 @@ services:
       - DB_MONGO_PASSWD=go-trader
       - DB_MONGO_USERNAME=go-trader
       - DB_MONGO_DB=go-trader
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6380/0
       - CRON_ENABLED=false
 
   mongo:
@@ -23,7 +23,7 @@ services:
     ports:
       - "27017:27017"
     volumes: 
-      - ~/Users/cedric/mongo:/data/db
+      - ~/mongo/data:/data/db
     command: mongod
 
   redis:
@@ -31,3 +31,5 @@ services:
     container_name: trader_redis
     ports:
       - "${REDIS_PORT:-6380}:6379"
+    volumes: 
+      - ~/redis/data:/data

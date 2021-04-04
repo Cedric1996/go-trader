@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:02:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-03 17:03:36
+ * @Last Modified time: 2021-04-04 18:19:51
  */
 
 package app
@@ -10,13 +10,12 @@ package app
 import (
 	"fmt"
 
-	"github.cedric1996.com/go-trader/app/database"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/service"
 )
 
 func Init() {
-	database.Init()
+	// mongo.Get()
 	// token := fetcher.Token()
 	// fmt.Println(token)
 	count := fetcher.GetQueryCount()
