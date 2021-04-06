@@ -2,13 +2,11 @@
  * @Author: cedric.jia
  * @Date: 2021-03-13 14:54:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-03-18 15:50:14
+ * @Last Modified time: 2021-04-05 12:40:00
  */
 package cmd
 
 import (
-	"fmt"
-
 	"github.cedric1996.com/go-trader/app"
 	"github.com/urfave/cli"
 )
@@ -44,7 +42,6 @@ var (
 )
 
 func runTest(c *cli.Context) error {
-	fmt.Println("test cmd")
 	app.Init()
 
 	return nil

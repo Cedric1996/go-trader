@@ -4,7 +4,11 @@ DOCKER_REF := $(DOCKER_IMAGE):$(DOCKER_TAG)
 
 .PHONY: run
 run: 
-	go build . && ./go-trader test
+	go build . && DB_MONGO_HOST=localhost:27018 ./go-trader test
+
+.PHONY: test
+test: 
+	go build . && go test -v ./...
 
 .PHONY: docker
 docker:
@@ -13,3 +17,12 @@ docker:
 .PHONY: compose-up
 compose-up:
 	@docker-compose up -d
+
+.PHONY: compose-down
+compose-down:
+	@docker-compose down -v
+
+.PHONY:restart
+restart:
+	"$(MAKE)"  compose-down
+	"$(MAKE)"  compose-up

@@ -1,4 +1,6 @@
-.vscode
+.vscode/
+.database/
+
 /go-trader
 /bin
 /dist

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-03 17:01:30
+ * @Last Modified time: 2021-04-04 22:38:07
  */
 
 package fetcher
@@ -89,6 +89,7 @@ func GetPrice(code string, t TimeScope, count int64) string {
     "fq_ref_date": "2018-12-18"
 }
 */
+
 func GetPriceWithPeriod(code string, t TimeScope, begin string, end string) string {
 	params := map[string]interface{}{
 		"method":   "get_price_period",
@@ -182,8 +183,7 @@ func GetIndexStocks(code string, date string) []string {
 	}
 	res, err := Request(params)
 	if err != nil {
-		fmt.Errorf("get Index Stock error: %s", err)
-		return nil
+		return []string{fmt.Errorf("get Index Stock error: %s", err).Error()}
 	}
 	stocks := strings.Split(string(res), "\n")
 	return stocks
