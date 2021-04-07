@@ -11,13 +11,18 @@ import (
 	"fmt"
 
 	"github.cedric1996.com/go-trader/app/database/mongo"
+	"github.com/spf13/viper"
 )
 
 func Init() {
+	if err := initConfig(); err != nil {
+		panic(err)
+	}
 	// if err := mongo.CreateCollection("test2"); err != nil {
 	// 	fmt.Println(err.Error())
 	// }
-	if err := mongo.Insert(); err != nil {
+	s := &mongo.Stock{}
+	if err := s.Insert(); err != nil {
 		fmt.Println(err.Error())
 	}
 	// token := fetcher.Token()
@@ -36,4 +41,15 @@ func Init() {
 	// fmt.Println(weights)
 	// data := service.GetFundamentalsData(fetcher.Balance, "000001.XSHE", "2021-04-02")
 	// fmt.Println(data)
+}
+
+func initConfig() error {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil {             // Handle errors reading the config file
+		return fmt.Errorf("Fatal error config file: %s \n", err)
+	}
+	return nil
 }

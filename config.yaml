@@ -1,0 +1,10 @@
+mongo:
+  hostname: 127.0.0.1
+  port: 27018
+  username: trader
+  password: trader123456
+  database: trader
+
+redis:
+  hostname: 127.0.0.1
+  port: 6380

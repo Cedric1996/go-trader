@@ -10,6 +10,7 @@ require (
 	github.com/go-redis/redis/v8 v8.8.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
+	github.com/spf13/viper v1.7.1
 	github.com/urfave/cli v1.22.5
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc // indirect
