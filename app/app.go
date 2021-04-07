@@ -10,7 +10,7 @@ package app
 import (
 	"fmt"
 
-	"github.cedric1996.com/go-trader/app/database/mongo"
+	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.com/spf13/viper"
 )
 
@@ -21,10 +21,10 @@ func Init() {
 	// if err := mongo.CreateCollection("test2"); err != nil {
 	// 	fmt.Println(err.Error())
 	// }
-	s := &mongo.Stock{}
-	if err := s.Insert(); err != nil {
-		fmt.Println(err.Error())
-	}
+	// s := &mongo.Stock{}
+	// if err := s.Insert(); err != nil {
+	// 	fmt.Println(err.Error())
+	// }
 	// token := fetcher.Token()
 	// fmt.Println(token)
 	// count := fetcher.GetQueryCount()
@@ -33,8 +33,8 @@ func Init() {
 	// fmt.Println(stock)
 	// stockInfo := fetcher.GetSecurityInfo("600139.XSHG")
 	// fmt.Println(stockInfo)
-	// bar := fetcher.GetPrice("600139.XSHG", fetcher.Day, 5000)
-	// fmt.Println(bar)
+	bar := fetcher.GetPrice("600139.XSHG", fetcher.Day, 5000)
+	fmt.Println(bar)
 	// stocks := fetcher.GetIndexStocks("000300.XSHG","2021-04-02")
 	// fmt.Println(stocks)
 	// weights := fetcher.GetIndexWeights("000001.XSHE,000002.XSHE", "2021-04-02")

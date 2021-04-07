@@ -8,3 +8,6 @@ mongo:
 redis:
   hostname: 127.0.0.1
   port: 6380
+  sets: 
+    success: fetch_success
+    fail: fetch_fail

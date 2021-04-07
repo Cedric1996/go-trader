@@ -71,11 +71,12 @@ func GetPrice(code string, t TimeScope, count int64) string {
 		"unit":   t,
 		"count":  count,
 	}
-	res, err := Request(params)
+	res := paramsEncoder(params)
+	_, err := Request(params)
 	if err != nil {
 		return fmt.Errorf("get price error: %s", err).Error()
 	}
-	return string(res)
+	return res
 }
 
 /* Sample Request
@@ -231,4 +232,30 @@ func GetFundamentals(table FinTable, code, date string) (string, error) {
 		return "", fmt.Errorf("get Industry error: %s", err)
 	}
 	return string(res), nil
+}
+
+func paramsEncoder(params map[string]interface{}) string {
+	res := ""
+	if val, ok := params["method"].(string); ok {
+		res += fmt.Sprintf("method=%s;", val)
+	}
+	if val, ok := params["code"].(string); ok {
+		res += fmt.Sprintf("code=%s;", val)
+	}
+	if val, ok := params["date"].(string); ok {
+		res += fmt.Sprintf("date=%s;", val)
+	}
+	if val, ok := params["end_date"].(string); ok {
+		res += fmt.Sprintf("end_date=%s;", val)
+	}
+	if val, ok := params["table"].(FinTable); ok {
+		res += fmt.Sprintf("table=%s;", val)
+	}
+	if val, ok := params["unit"].(TimeScope); ok {
+		res += fmt.Sprintf("unit=%s;", val)
+	}
+	if val, ok := params["count"].(int64); ok {
+		res += fmt.Sprintf("count=%s;", strconv.FormatInt(val, 10))
+	}
+	return res
 }

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 12:26:16
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-07 22:11:40
+ * @Last Modified time: 2021-04-07 22:25:38
  */
 package mongo
 
@@ -15,11 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-)
-
-var (
-// clientInit  sync.Once
-// mongoClient *mongo.Client
 )
 
 func client() *mongo.Client {
