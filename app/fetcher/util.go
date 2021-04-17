@@ -2,12 +2,14 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:04:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-03-14 21:54:06
+ * @Last Modified time: 2021-04-17 17:30:15
  */
 
 package fetcher
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var token string
 

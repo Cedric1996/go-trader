@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-04 22:38:07
+ * @Last Modified time: 2021-04-17 17:22:31
  */
 
 package fetcher
@@ -63,7 +63,7 @@ func GetSecurityInfo(code string) string {
 	return string(t)
 }
 
-func GetPrice(code string, t TimeScope, count int64) string {
+func GetPrice(code string, t TimeScope, count int64) (*ResponseBody, error) {
 	params := map[string]interface{}{
 		"method": "get_price",
 		"token":  Token(),
@@ -74,9 +74,10 @@ func GetPrice(code string, t TimeScope, count int64) string {
 	res := paramsEncoder(params)
 	_, err := Request(params)
 	if err != nil {
-		return fmt.Errorf("get price error: %s", err).Error()
+		return nil, fmt.Errorf("get price error: %s", err)
 	}
-	return res
+	resBody := ParseResponse(res)
+	return resBody, nil
 }
 
 /* Sample Request
@@ -219,7 +220,7 @@ func GetIndustry(code string, date string) string {
 }
 
 // Query 1000 data once by default.
-func GetFundamentals(table FinTable, code, date string) (string, error) {
+func GetFundamentals(table FinTable, code, date string) (*ResponseBody, error) {
 	params := map[string]interface{}{
 		"method": "get_fundamentals",
 		"token":  Token(),
@@ -229,9 +230,10 @@ func GetFundamentals(table FinTable, code, date string) (string, error) {
 	}
 	res, err := Request(params)
 	if err != nil {
-		return "", fmt.Errorf("get Industry error: %s", err)
+		return nil, fmt.Errorf("get Industry error: %s", err)
 	}
-	return string(res), nil
+	resBody := ParseResponse(string(res))
+	return resBody, nil
 }
 
 func paramsEncoder(params map[string]interface{}) string {
