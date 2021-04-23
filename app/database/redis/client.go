@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-04 18:03:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-23 22:06:19
+ * @Last Modified time: 2021-04-23 23:28:48
  */
 
 package redis
@@ -40,7 +40,7 @@ func Client() *RedisClient {
 	clientInit.Do(func() {
 		client := &RedisClient{}
 		rdb = redis.NewClient(&redis.Options{
-			Addr:     fmt.Sprintf("%s/%s", viper.GetString("redis.hostname"), viper.GetString("redis.port")),
+			Addr:     fmt.Sprintf("%s:%s", viper.GetString("redis.hostname"), viper.GetString("redis.port")),
 			Password: "",
 			DB:       0,
 		})

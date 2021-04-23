@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:48:55
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-23 22:06:56
+ * @Last Modified time: 2021-04-23 23:26:00
  */
 
 package database
@@ -15,10 +15,16 @@ import (
 )
 
 var (
-	successSet = viper.GetString("redis.sets.success")
-	failSet    = viper.GetString("redis.sets.fail")
-	handleSet  = viper.GetString("redis.maps.handle")
+	successSet string
+	failSet    string
+	handleSet  string
 )
+
+func Init() {
+	successSet = viper.GetString("redis.sets.success")
+	failSet = viper.GetString("redis.sets.fail")
+	handleSet = viper.GetString("redis.maps.handle")
+}
 
 func FetchSuccess(member string) error {
 	if err := redis.Client().HSet(successSet, member); err != nil {

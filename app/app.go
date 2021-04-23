@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:02:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-23 23:11:02
+ * @Last Modified time: 2021-04-23 23:26:32
  */
 
 package app
@@ -10,6 +10,7 @@ package app
 import (
 	"fmt"
 
+	"github.cedric1996.com/go-trader/app/database"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.com/spf13/viper"
 )
@@ -52,5 +53,6 @@ func initConfig() error {
 	if err != nil {             // Handle errors reading the config file
 		return fmt.Errorf("Fatal error config file: %s \n", err)
 	}
+	database.Init()
 	return nil
 }
