@@ -2,16 +2,21 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 12:18:52
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-03-14 21:54:10
+ * @Last Modified time: 2021-04-23 22:59:31
  */
 
 package fetcher
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.cedric1996.com/go-trader/app/context"
+	"github.cedric1996.com/go-trader/app/database"
 )
 
 var (
@@ -19,23 +24,16 @@ var (
 	client     = &http.Client{}
 )
 
-// Request represents a Http request to plastic web server
-// type Request struct {
-// 	ctx         context.Context
-// 	method      string
-// 	url         string
-// 	headers     http.Header
-// 	queryParam  url.Values
-// 	data        interface{}
-// 	request     *http.Request
-// 	contentType string
-// 	client      *http.Client
-// 	buffer      *bytes.Buffer
-// }
-
 // Request create a http request
-func Request(body map[string]interface{}) ([]byte, error) {
-	bodyStr, err := json.Marshal(body)
+func Request(ctx *context.Ctx) ([]byte, error) {
+	isRequested, err := checkRequest(ctx.Params)
+	if err != nil {
+		return nil, err
+	} else if isRequested {
+		return nil, nil
+	}
+
+	bodyStr, err := json.Marshal(ctx.Params)
 	if err != nil {
 		return nil, err
 	}
@@ -51,4 +49,39 @@ func Request(body map[string]interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+func paramsEncoder(params map[string]interface{}) string {
+	res := ""
+	if val, ok := params["method"].(string); ok {
+		res += fmt.Sprintf("method=%s;", val)
+	}
+	if val, ok := params["code"].(string); ok {
+		res += fmt.Sprintf("code=%s;", val)
+	}
+	if val, ok := params["date"].(string); ok {
+		res += fmt.Sprintf("date=%s;", val)
+	}
+	if val, ok := params["end_date"].(string); ok {
+		res += fmt.Sprintf("end_date=%s;", val)
+	}
+	if val, ok := params["table"].(FinTable); ok {
+		res += fmt.Sprintf("table=%s;", val)
+	}
+	if val, ok := params["unit"].(TimeScope); ok {
+		res += fmt.Sprintf("unit=%s;", val)
+	}
+	if val, ok := params["count"].(int64); ok {
+		res += fmt.Sprintf("count=%s;", strconv.FormatInt(val, 10))
+	}
+	return res
+}
+
+func checkRequest(body map[string]interface{}) (bool, error) {
+	requestKey := paramsEncoder(body)
+	success, err := database.IsFetchSuccess(requestKey)
+	if err != nil {
+		return false, err
+	}
+	return success, nil
 }

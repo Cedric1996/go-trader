@@ -11,4 +11,7 @@ redis:
   sets: 
     success: fetch_success
     fail: fetch_fail
+  maps:
+    handle: handle_fail
+  prefix: trader-
   hsetname: TraderFetch

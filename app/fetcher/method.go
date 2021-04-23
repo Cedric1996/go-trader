@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-17 18:34:48
+ * @Last Modified time: 2021-04-23 23:10:18
  */
 
 package fetcher
@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.cedric1996.com/go-trader/app/context"
 )
 
 var (
@@ -18,12 +20,13 @@ var (
 )
 
 // GetQueryCount return remain count of query daily.
-func GetQueryCount() int64 {
+func GetQueryCount(ctx *context.Ctx) int64 {
 	params := map[string]interface{}{
 		"method": "get_query_count",
 		"token":  Token(),
 	}
-	t, err := Request(params)
+	ctx.Params = params
+	t, err := Request(ctx)
 	if err != nil {
 		fmt.Errorf("get query count error: %v", err)
 		return 0
@@ -36,34 +39,36 @@ func GetQueryCount() int64 {
 	return n
 }
 
-func GetAllSecurities(securityType SecurityType, t string) string {
+func GetAllSecurities(ctx *context.Ctx, securityType SecurityType, t string) string {
 	params := map[string]interface{}{
 		"method": "get_all_securities",
 		"token":  Token(),
 		"code":   securityType,
 		"date":   t,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get all securities error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetSecurityInfo(code string) string {
+func GetSecurityInfo(ctx *context.Ctx, code string) string {
 	params := map[string]interface{}{
 		"method": "get_security_info",
 		"token":  Token(),
 		"code":   code,
 	}
-	t, err := Request(params)
+	ctx.Params = params
+	t, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get security info error: %s", err).Error()
 	}
 	return string(t)
 }
 
-func GetPrice(code string, t TimeScope, count int64) (*ResponseBody, error) {
+func GetPrice(ctx *context.Ctx, code string, t TimeScope, count int64) (*ResponseBody, error) {
 	params := map[string]interface{}{
 		"method": "get_price",
 		"token":  Token(),
@@ -71,8 +76,9 @@ func GetPrice(code string, t TimeScope, count int64) (*ResponseBody, error) {
 		"unit":   t,
 		"count":  count,
 	}
-	_ = paramsEncoder(params)
-	res, err := Request(params)
+	ctx.Params = params
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get price error: %s", err)
 	}
@@ -92,7 +98,7 @@ func GetPrice(code string, t TimeScope, count int64) (*ResponseBody, error) {
 }
 */
 
-func GetPriceWithPeriod(code string, t TimeScope, begin string, end string) string {
+func GetPriceWithPeriod(ctx *context.Ctx, code string, t TimeScope, begin string, end string) string {
 	params := map[string]interface{}{
 		"method":   "get_price_period",
 		"token":    Token(),
@@ -101,27 +107,29 @@ func GetPriceWithPeriod(code string, t TimeScope, begin string, end string) stri
 		"date":     begin,
 		"end_date": end,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get price with period error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCurrentPrice(code string) string {
+func GetCurrentPrice(ctx *context.Ctx, code string) string {
 	params := map[string]interface{}{
 		"method": "get_current_price",
 		"token":  Token(),
 		"code":   code,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get current price error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCallAuction(code string, begin string, end string) string {
+func GetCallAuction(ctx *context.Ctx, code string, begin string, end string) string {
 	params := map[string]interface{}{
 		"method":   "get_call_auction",
 		"token":    Token(),
@@ -129,61 +137,66 @@ func GetCallAuction(code string, begin string, end string) string {
 		"date":     begin,
 		"end_date": end,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get call auction with period error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCurrentTick(code string) string {
+func GetCurrentTick(ctx *context.Ctx, code string) string {
 	params := map[string]interface{}{
 		"method": "get_current_tick",
 		"token":  Token(),
 		"code":   code,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get current tick error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCurrentTicks(codes string) string {
+func GetCurrentTicks(ctx *context.Ctx, codes string) string {
 	params := map[string]interface{}{
 		"method": "get_current_ticks",
 		"token":  Token(),
 		"code":   codes,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get current tick error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetFundInfo(code string, date string) string {
+func GetFundInfo(ctx *context.Ctx, code string, date string) string {
 	params := map[string]interface{}{
 		"method": "get_fund_info",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get fundI info error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetIndexStocks(code string, date string) []string {
+func GetIndexStocks(ctx *context.Ctx, code string, date string) []string {
 	params := map[string]interface{}{
 		"method": "get_index_stocks",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return []string{fmt.Errorf("get Index Stock error: %s", err).Error()}
 	}
@@ -191,28 +204,30 @@ func GetIndexStocks(code string, date string) []string {
 	return stocks
 }
 
-func GetIndexWeights(code string, date string) string {
+func GetIndexWeights(ctx *context.Ctx, code string, date string) string {
 	params := map[string]interface{}{
 		"method": "get_index_weights",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get Index Weights error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetIndustry(code string, date string) string {
+func GetIndustry(ctx *context.Ctx, code string, date string) string {
 	params := map[string]interface{}{
 		"method": "get_industry",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return fmt.Errorf("get Industry error: %s", err).Error()
 	}
@@ -220,7 +235,7 @@ func GetIndustry(code string, date string) string {
 }
 
 // Query 1000 data once by default.
-func GetFundamentals(table FinTable, code, date string) (*ResponseBody, error) {
+func GetFundamentals(ctx *context.Ctx, table FinTable, code, date string) (*ResponseBody, error) {
 	params := map[string]interface{}{
 		"method": "get_fundamentals",
 		"token":  Token(),
@@ -228,36 +243,11 @@ func GetFundamentals(table FinTable, code, date string) (*ResponseBody, error) {
 		"code":   code,
 		"date":   date,
 	}
-	res, err := Request(params)
+	ctx.Params = params
+	res, err := Request(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get Industry error: %s", err)
 	}
 	resBody := ParseResponse(string(res))
 	return resBody, nil
-}
-
-func paramsEncoder(params map[string]interface{}) string {
-	res := ""
-	if val, ok := params["method"].(string); ok {
-		res += fmt.Sprintf("method=%s;", val)
-	}
-	if val, ok := params["code"].(string); ok {
-		res += fmt.Sprintf("code=%s;", val)
-	}
-	if val, ok := params["date"].(string); ok {
-		res += fmt.Sprintf("date=%s;", val)
-	}
-	if val, ok := params["end_date"].(string); ok {
-		res += fmt.Sprintf("end_date=%s;", val)
-	}
-	if val, ok := params["table"].(FinTable); ok {
-		res += fmt.Sprintf("table=%s;", val)
-	}
-	if val, ok := params["unit"].(TimeScope); ok {
-		res += fmt.Sprintf("unit=%s;", val)
-	}
-	if val, ok := params["count"].(int64); ok {
-		res += fmt.Sprintf("count=%s;", strconv.FormatInt(val, 10))
-	}
-	return res
 }

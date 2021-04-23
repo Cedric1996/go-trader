@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-04 18:03:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-07 23:02:20
+ * @Last Modified time: 2021-04-23 22:06:19
  */
 
 package redis
@@ -17,10 +17,10 @@ import (
 )
 
 var clientInit sync.Once
-var client *redisClient
+var client *RedisClient
 var rdb *redis.Client
 
-type redisClient struct {
+type RedisClient struct {
 	rdb *redis.Client
 }
 
@@ -36,9 +36,9 @@ func IsRedisKeyNotExistsError(err error) bool {
 	return err == redis.Nil
 }
 
-func Client() *redisClient {
+func Client() *RedisClient {
 	clientInit.Do(func() {
-		client := &redisClient{}
+		client := &RedisClient{}
 		rdb = redis.NewClient(&redis.Options{
 			Addr:     fmt.Sprintf("%s/%s", viper.GetString("redis.hostname"), viper.GetString("redis.port")),
 			Password: "",
@@ -49,50 +49,56 @@ func Client() *redisClient {
 	return client
 }
 
-func (c *redisClient) SAdd(key string, member ...string) error {
+func (c *RedisClient) HSet(key string, member ...string) error {
 	ctx := context.Background()
-	if err := rdb.SAdd(ctx, key, member).Err(); err != nil {
+	if err := rdb.HSet(ctx, key, member).Err(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *redisClient) SIsMember(key, member string) (bool, error) {
+func (c *RedisClient) HExists(key, member string) (bool, error) {
 	ctx := context.Background()
-	cmd := rdb.SIsMember(ctx, key, member)
+	cmd := rdb.HExists(ctx, key, member)
 	if cmd.Err() != nil {
 		return false, cmd.Err()
 	}
 	return cmd.Val(), nil
 }
 
-func (c *redisClient) Set(key, val string) error {
+func (c *RedisClient) HDel(key string, member ...string) error {
 	ctx := context.Background()
-	if err := rdb.Set(ctx, key, val, 0).Err(); err != nil {
+	if err := rdb.HDel(ctx, key, member...).Err(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *redisClient) Get(key string) (string, error) {
+func (c *RedisClient) MSet(key string, member interface{}) error {
 	ctx := context.Background()
-	val, err := rdb.Get(ctx, key).Result()
-	if IsRedisKeyNotExistsError(err) {
-		return "", RedisKeyNotExistsError{key: key}
-	} else if err != nil {
-		return "", err
+	if err := rdb.MSet(ctx, key, member).Err(); err != nil {
+		return err
 	}
-	return val, nil
+	return nil
 }
 
-func (c *redisClient) Delete(key string) bool {
+func (c *RedisClient) MGet(key string) (interface{}, error) {
 	ctx := context.Background()
-	cmd := rdb.Del(ctx, key).Val()
-	return cmd == 1
+	cmd := rdb.MGet(ctx, key)
+	if cmd.Err() != nil {
+		return nil, cmd.Err()
+	}
+	return cmd.Val(), nil
 }
 
-func (c *redisClient) Exist(key string) bool {
+func (c *RedisClient) Flush(hsetName string) error {
 	ctx := context.Background()
-	exist := rdb.Exists(ctx, key).Val()
-	return exist == 1
+	keys, err := c.rdb.HKeys(ctx, hsetName).Result()
+	if err != nil {
+		return err
+	}
+	if err = c.rdb.Del(ctx, keys...).Err(); err != nil {
+		return err
+	}
+	return c.rdb.Del(ctx, hsetName).Err()
 }

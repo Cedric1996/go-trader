@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:48:55
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-07 23:05:19
+ * @Last Modified time: 2021-04-23 22:06:56
  */
 
 package database
@@ -17,26 +17,34 @@ import (
 var (
 	successSet = viper.GetString("redis.sets.success")
 	failSet    = viper.GetString("redis.sets.fail")
+	handleSet  = viper.GetString("redis.maps.handle")
 )
 
 func FetchSuccess(member string) error {
-	if err := redis.Client().SAdd(successSet, member); err != nil {
+	if err := redis.Client().HSet(successSet, member); err != nil {
 		return fmt.Errorf("set Fetch Success status error: %v", err)
 	}
 	return nil
 }
 
 func FetchFail(member string) error {
-	if err := redis.Client().SAdd(failSet, member); err != nil {
+	if err := redis.Client().HSet(failSet, member); err != nil {
 		return fmt.Errorf("set Fetch Fail status error: %v", err)
 	}
 	return nil
 }
 
-func IsFetchSuccess(key, member string) (bool, error) {
-	return redis.Client().SIsMember(successSet, member)
+func IsFetchSuccess(member string) (bool, error) {
+	return redis.Client().HExists(successSet, member)
 }
 
-func IsFetchFail(key, member string) (bool, error) {
-	return redis.Client().SIsMember(failSet, member)
+func IsFetchFail(member string) (bool, error) {
+	return redis.Client().HExists(failSet, member)
+}
+
+func HandleFailed(key string) error {
+	if err := redis.Client().MSet(handleSet, key); err != nil {
+		return fmt.Errorf("set Fetch Success status error: %v", err)
+	}
+	return nil
 }
