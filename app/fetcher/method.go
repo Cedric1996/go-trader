@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-17 17:22:31
+ * @Last Modified time: 2021-04-17 18:34:48
  */
 
 package fetcher
@@ -71,12 +71,12 @@ func GetPrice(code string, t TimeScope, count int64) (*ResponseBody, error) {
 		"unit":   t,
 		"count":  count,
 	}
-	res := paramsEncoder(params)
-	_, err := Request(params)
+	_ = paramsEncoder(params)
+	res, err := Request(params)
 	if err != nil {
 		return nil, fmt.Errorf("get price error: %s", err)
 	}
-	resBody := ParseResponse(res)
+	resBody := ParseResponse(string(res))
 	return resBody, nil
 }
 

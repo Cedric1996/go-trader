@@ -2,12 +2,15 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 17:30:21
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-17 17:32:36
+ * @Last Modified time: 2021-04-17 18:36:11
  */
 
 package fetcher
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type dataUnit []string
 type ResponseBody struct {
@@ -16,6 +19,7 @@ type ResponseBody struct {
 }
 
 func ParseResponse(input string) *ResponseBody {
+	fmt.Println(input)
 	resBody := &ResponseBody{}
 	arr := strings.Split(input, "\n")
 	resBody.keys = strings.Split(arr[0], ",")
@@ -25,6 +29,10 @@ func ParseResponse(input string) *ResponseBody {
 	return resBody
 }
 
-// func (res *ResponseBody) ToString() string {
+func (res *ResponseBody) GetKeys() []string {
+	return res.keys
+}
 
-// }
+func (res *ResponseBody) GetVals() []dataUnit {
+	return res.vals
+}

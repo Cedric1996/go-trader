@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:02:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-17 16:48:13
+ * @Last Modified time: 2021-04-17 18:32:10
  */
 
 package app
@@ -10,7 +10,7 @@ package app
 import (
 	"fmt"
 
-	"github.cedric1996.com/go-trader/app/fetcher"
+	"github.cedric1996.com/go-trader/app/service"
 	"github.com/spf13/viper"
 )
 
@@ -33,8 +33,9 @@ func Init() {
 	// fmt.Println(stock)
 	// stockInfo := fetcher.GetSecurityInfo("600139.XSHG")
 	// fmt.Println(stockInfo)
-	bar, _ := fetcher.GetPrice("600139.XSHG", fetcher.Day, 1)
-	fmt.Println(bar)
+	err := service.GetPricesByDay("600139.XSHG", 1)
+	// bar, _ := fetcher.GetPrice("600139.XSHG", fetcher.Day, 1)
+	fmt.Println(err)
 	// stocks := fetcher.GetIndexStocks("000300.XSHG","2021-04-02")
 	// fmt.Println(stocks)
 	// weights := fetcher.GetIndexWeights("000001.XSHE,000002.XSHE", "2021-04-02")

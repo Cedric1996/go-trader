@@ -11,3 +11,4 @@ redis:
   sets: 
     success: fetch_success
     fail: fetch_fail
+  hsetname: TraderFetch
