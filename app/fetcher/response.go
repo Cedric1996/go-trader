@@ -10,16 +10,16 @@ package fetcher
 import (
 	"strings"
 
-	"github.cedric1996.com/go-trader/app/context"
+	ctx "github.cedric1996.com/go-trader/app/context"
 )
 
-func ParseResponse(ctx *context.Ctx, input []byte) error {
-	resBody := &context.ResponseBody{}
+func ParseResponse(c *ctx.Context, input []byte) error {
+	resBody := &ctx.ResponseBody{}
 	arr := strings.Split(string(input), "\n")
 	resBody.SetKeys(strings.Split(arr[0], ",")...)
 	for _, val := range arr[1:] {
 		resBody.SetVals(strings.Split(val, ","))
 	}
-	ctx.ResBody = resBody
+	c.ResBody = resBody
 	return nil
 }

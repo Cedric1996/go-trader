@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.cedric1996.com/go-trader/app/context"
+	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/database"
 )
 
@@ -25,15 +25,15 @@ var (
 )
 
 // Request create a http request
-func Request(ctx *context.Ctx) ([]byte, error) {
-	isRequested, err := checkRequest(ctx.Params)
+func Request(c *ctx.Context) ([]byte, error) {
+	isRequested, err := checkRequest(c.Params)
 	if err != nil {
 		return nil, err
 	} else if isRequested {
 		return nil, nil
 	}
 
-	bodyStr, err := json.Marshal(ctx.Params)
+	bodyStr, err := json.Marshal(c.Params)
 	if err != nil {
 		return nil, err
 	}

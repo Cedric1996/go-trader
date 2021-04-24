@@ -5,13 +5,13 @@
  * @Last Modified time: 2021-04-24 12:05:02
  */
 
-package context
+package ctx
 
 import (
 	gocontext "context"
 )
 
-type Ctx struct {
+type Context struct {
 	gocontext.Context
 	methodName string
 	requestKey string

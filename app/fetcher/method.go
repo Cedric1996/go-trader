@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-24 12:10:14
+ * @Last Modified time: 2021-04-24 12:18:39
  */
 
 package fetcher
@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.cedric1996.com/go-trader/app/context"
+	ctx "github.cedric1996.com/go-trader/app/context"
 )
 
 var (
@@ -20,13 +20,13 @@ var (
 )
 
 // GetQueryCount return remain count of query daily.
-func GetQueryCount(ctx *context.Ctx) int64 {
+func GetQueryCount(c *ctx.Context) int64 {
 	params := map[string]interface{}{
 		"method": "get_query_count",
 		"token":  Token(),
 	}
-	ctx.Params = params
-	t, err := Request(ctx)
+	c.Params = params
+	t, err := Request(c)
 	if err != nil {
 		fmt.Errorf("get query count error: %v", err)
 		return 0
@@ -39,36 +39,39 @@ func GetQueryCount(ctx *context.Ctx) int64 {
 	return n
 }
 
-func GetAllSecurities(ctx *context.Ctx, securityType SecurityType, t string) string {
+func GetAllSecurities(c *ctx.Context, securityType SecurityType, t string) string {
 	params := map[string]interface{}{
 		"method": "get_all_securities",
 		"token":  Token(),
 		"code":   securityType,
 		"date":   t,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get all securities error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetSecurityInfo(ctx *context.Ctx, code string) string {
+func GetSecurityInfo(c *ctx.Context, code string) error {
 	params := map[string]interface{}{
 		"method": "get_security_info",
 		"token":  Token(),
 		"code":   code,
 	}
-	ctx.Params = params
-	t, err := Request(ctx)
+	c.Params = params
+	t, err := Request(c)
 	if err != nil {
-		return fmt.Errorf("get security info error: %s", err).Error()
+		return fmt.Errorf("get security info error: %s", err)
 	}
-	return string(t)
+	if err := ParseResponse(c, t); err != nil {
+		return err
+	}
+	return nil
 }
 
-func GetPrice(ctx *context.Ctx, code string, t TimeScope, count int64) error {
+func GetPrice(c *ctx.Context, code string, t TimeScope, count int64) error {
 	params := map[string]interface{}{
 		"method": "get_price",
 		"token":  Token(),
@@ -76,12 +79,12 @@ func GetPrice(ctx *context.Ctx, code string, t TimeScope, count int64) error {
 		"unit":   t,
 		"count":  count,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get price error: %s", err)
 	}
-	if err := ParseResponse(ctx, res); err != nil {
+	if err := ParseResponse(c, res); err != nil {
 		return err
 	}
 	return nil
@@ -99,7 +102,7 @@ func GetPrice(ctx *context.Ctx, code string, t TimeScope, count int64) error {
 }
 */
 
-func GetPriceWithPeriod(ctx *context.Ctx, code string, t TimeScope, begin string, end string) string {
+func GetPriceWithPeriod(c *ctx.Context, code string, t TimeScope, begin string, end string) string {
 	params := map[string]interface{}{
 		"method":   "get_price_period",
 		"token":    Token(),
@@ -108,29 +111,29 @@ func GetPriceWithPeriod(ctx *context.Ctx, code string, t TimeScope, begin string
 		"date":     begin,
 		"end_date": end,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get price with period error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCurrentPrice(ctx *context.Ctx, code string) string {
+func GetCurrentPrice(c *ctx.Context, code string) string {
 	params := map[string]interface{}{
 		"method": "get_current_price",
 		"token":  Token(),
 		"code":   code,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get current price error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCallAuction(ctx *context.Ctx, code string, begin string, end string) string {
+func GetCallAuction(c *ctx.Context, code string, begin string, end string) string {
 	params := map[string]interface{}{
 		"method":   "get_call_auction",
 		"token":    Token(),
@@ -138,66 +141,66 @@ func GetCallAuction(ctx *context.Ctx, code string, begin string, end string) str
 		"date":     begin,
 		"end_date": end,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get call auction with period error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCurrentTick(ctx *context.Ctx, code string) string {
+func GetCurrentTick(c *ctx.Context, code string) string {
 	params := map[string]interface{}{
 		"method": "get_current_tick",
 		"token":  Token(),
 		"code":   code,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get current tick error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetCurrentTicks(ctx *context.Ctx, codes string) string {
+func GetCurrentTicks(c *ctx.Context, codes string) string {
 	params := map[string]interface{}{
 		"method": "get_current_ticks",
 		"token":  Token(),
 		"code":   codes,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get current tick error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetFundInfo(ctx *context.Ctx, code string, date string) string {
+func GetFundInfo(c *ctx.Context, code string, date string) string {
 	params := map[string]interface{}{
 		"method": "get_fund_info",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get fundI info error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetIndexStocks(ctx *context.Ctx, code string, date string) []string {
+func GetIndexStocks(c *ctx.Context, code string, date string) []string {
 	params := map[string]interface{}{
 		"method": "get_index_stocks",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return []string{fmt.Errorf("get Index Stock error: %s", err).Error()}
 	}
@@ -205,30 +208,30 @@ func GetIndexStocks(ctx *context.Ctx, code string, date string) []string {
 	return stocks
 }
 
-func GetIndexWeights(ctx *context.Ctx, code string, date string) string {
+func GetIndexWeights(c *ctx.Context, code string, date string) string {
 	params := map[string]interface{}{
 		"method": "get_index_weights",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get Index Weights error: %s", err).Error()
 	}
 	return string(res)
 }
 
-func GetIndustry(ctx *context.Ctx, code string, date string) string {
+func GetIndustry(c *ctx.Context, code string, date string) string {
 	params := map[string]interface{}{
 		"method": "get_industry",
 		"token":  Token(),
 		"code":   code,
 		"date":   date,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get Industry error: %s", err).Error()
 	}
@@ -236,7 +239,7 @@ func GetIndustry(ctx *context.Ctx, code string, date string) string {
 }
 
 // Query 1000 data once by default.
-func GetFundamentals(ctx *context.Ctx, table FinTable, code, date string) error {
+func GetFundamentals(c *ctx.Context, table FinTable, code, date string) error {
 	params := map[string]interface{}{
 		"method": "get_fundamentals",
 		"token":  Token(),
@@ -244,12 +247,12 @@ func GetFundamentals(ctx *context.Ctx, table FinTable, code, date string) error 
 		"code":   code,
 		"date":   date,
 	}
-	ctx.Params = params
-	res, err := Request(ctx)
+	c.Params = params
+	res, err := Request(c)
 	if err != nil {
 		return fmt.Errorf("get Industry error: %s", err)
 	}
-	if err := ParseResponse(ctx, res); err != nil {
+	if err := ParseResponse(c, res); err != nil {
 		return err
 	}
 	return nil

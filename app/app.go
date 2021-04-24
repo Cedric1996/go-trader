@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:02:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-23 23:26:32
+ * @Last Modified time: 2021-04-24 19:34:25
  */
 
 package app
@@ -22,7 +22,6 @@ func Init() {
 	// if err := mongo.CreateCollection("test2"); err != nil {
 	// 	fmt.Println(err.Error())
 	// }
-	// s := &mongo.Stock{}
 	// if err := s.Insert(); err != nil {
 	// 	fmt.Println(err.Error())
 	// }
@@ -32,9 +31,9 @@ func Init() {
 	// fmt.Println(count)
 	// stock := fetcher.GetAllSecurities(fetcher.STOCK, "2020-03-12")
 	// fmt.Println(stock)
-	// stockInfo := fetcher.GetSecurityInfo("600139.XSHG")
-	// fmt.Println(stockInfo)
-	err := service.GetPricesByDay("600139.XSHG", 1)
+	// err := service.GetStockInfo("600139.XSHG")
+	// fmt.Println(err)
+	err := service.GetPricesByDay("600139.XSHG", 2)
 	// bar, _ := fetcher.GetPrice("600139.XSHG", fetcher.Day, 1)
 	fmt.Println(err)
 	// stocks := fetcher.GetIndexStocks("000300.XSHG","2021-04-02")
