@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 17:25:36
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-17 21:49:38
+ * @Last Modified time: 2021-04-24 12:11:30
  */
 
 package models
@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.cedric1996.com/go-trader/app/fetcher"
+	"github.cedric1996.com/go-trader/app/context"
 )
 
 // Price represents basic stock price info.
@@ -29,8 +29,9 @@ type Price struct {
 	preClose  float64
 }
 
-func UpdatePricesByDay(code string, body *fetcher.ResponseBody) error {
-	vals := body.GetVals()
+func UpdatePricesByDay(ctx *context.Ctx) error {
+	resBody := ctx.ResBody
+	vals := resBody.GetVals()
 	const shortForm = "2020-01-02T15:04:05Z"
 	res := make(map[time.Time]*Price)
 

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-23 23:10:18
+ * @Last Modified time: 2021-04-24 12:10:14
  */
 
 package fetcher
@@ -68,7 +68,7 @@ func GetSecurityInfo(ctx *context.Ctx, code string) string {
 	return string(t)
 }
 
-func GetPrice(ctx *context.Ctx, code string, t TimeScope, count int64) (*ResponseBody, error) {
+func GetPrice(ctx *context.Ctx, code string, t TimeScope, count int64) error {
 	params := map[string]interface{}{
 		"method": "get_price",
 		"token":  Token(),
@@ -77,13 +77,14 @@ func GetPrice(ctx *context.Ctx, code string, t TimeScope, count int64) (*Respons
 		"count":  count,
 	}
 	ctx.Params = params
-	ctx.Params = params
 	res, err := Request(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get price error: %s", err)
+		return fmt.Errorf("get price error: %s", err)
 	}
-	resBody := ParseResponse(string(res))
-	return resBody, nil
+	if err := ParseResponse(ctx, res); err != nil {
+		return err
+	}
+	return nil
 }
 
 /* Sample Request
@@ -235,7 +236,7 @@ func GetIndustry(ctx *context.Ctx, code string, date string) string {
 }
 
 // Query 1000 data once by default.
-func GetFundamentals(ctx *context.Ctx, table FinTable, code, date string) (*ResponseBody, error) {
+func GetFundamentals(ctx *context.Ctx, table FinTable, code, date string) error {
 	params := map[string]interface{}{
 		"method": "get_fundamentals",
 		"token":  Token(),
@@ -246,8 +247,10 @@ func GetFundamentals(ctx *context.Ctx, table FinTable, code, date string) (*Resp
 	ctx.Params = params
 	res, err := Request(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get Industry error: %s", err)
+		return fmt.Errorf("get Industry error: %s", err)
 	}
-	resBody := ParseResponse(string(res))
-	return resBody, nil
+	if err := ParseResponse(ctx, res); err != nil {
+		return err
+	}
+	return nil
 }
