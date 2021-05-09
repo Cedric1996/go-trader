@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.cedric1996.com/go-trader/app/database"
+	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.com/spf13/viper"
 )
@@ -31,11 +32,13 @@ func Init() {
 	// fmt.Println(count)
 	// stock := fetcher.GetAllSecurities(fetcher.STOCK, "2020-03-12")
 	// fmt.Println(stock)
-	// err := service.GetStockInfo("600139.XSHG")
-	// fmt.Println(err)
-	err := service.GetPricesByDay("600139.XSHG", 2)
+	err := service.GetStockInfo("600139.XSHG")
+	fmt.Println(err)
+	err = service.GetPricesByDay("600139.XSHG", 2)
 	// bar, _ := fetcher.GetPrice("600139.XSHG", fetcher.Day, 1)
 	fmt.Println(err)
+	stock, _ := models.GetStockInfoByCode("600139.XSHG")
+	fmt.Println(stock)
 	// stocks := fetcher.GetIndexStocks("000300.XSHG","2021-04-02")
 	// fmt.Println(stocks)
 	// weights := fetcher.GetIndexWeights("000001.XSHE,000002.XSHE", "2021-04-02")
@@ -50,7 +53,7 @@ func initConfig() error {
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
-		return fmt.Errorf("Fatal error config file: %s \n", err)
+		return fmt.Errorf("fatal error config file: %s \n", err)
 	}
 	database.Init()
 	return nil

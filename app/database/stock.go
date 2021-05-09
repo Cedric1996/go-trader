@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:10:50
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-24 18:06:40
+ * @Last Modified time: 2021-04-25 00:25:55
  */
 package database
 
@@ -12,10 +12,9 @@ import (
 	"log"
 
 	"github.cedric1996.com/go-trader/app/database/mongodb"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"gopkg.in/mgo.v2/bson"
 )
 
 func Collection() *mongo.Collection {

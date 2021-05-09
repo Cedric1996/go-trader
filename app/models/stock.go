@@ -2,16 +2,17 @@
  * @Author: cedric.jia
  * @Date: 2021-04-24 12:26:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-24 18:03:45
+ * @Last Modified time: 2021-04-25 00:22:53
  */
 
 package models
 
 import (
+	"context"
 	"fmt"
 
-	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/database"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Stock struct {
@@ -23,12 +24,8 @@ type Stock struct {
 	Price     []Price `bson:"price, omitempty"`
 }
 
-func InsertStockInfo(c *ctx.Context) error {
-	stocks, err := parseStockInfo(c)
-	if err != nil {
-		return err
-	}
-
+func InsertStockInfo(stocks []interface{}) error {
+	var err error
 	if len(stocks) == 1 {
 		err = database.InsertOne(stocks[0])
 	} else {
@@ -41,22 +38,21 @@ func InsertStockInfo(c *ctx.Context) error {
 	return nil
 }
 
-func parseStockInfo(c *ctx.Context) ([]interface{}, error) {
-	resBody := c.ResBody
-	code := c.Params["code"]
-	res := make([]interface{}, 0)
-	if code == "" {
-		return nil, fmt.Errorf("parse stock info with error")
+func GetStockInfoByCode(code string) (*Stock, error) {
+	result := &Stock{}
+	filter := bson.M{"code": code}
+	err := database.Collection().FindOne(context.Background(), filter).Decode(result)
+	if err != nil {
+		return nil, fmt.Errorf("get stock info: %s error", code)
 	}
-	vals := resBody.GetVals()
-	for _, val := range vals {
-		stock := Stock{
-			Code:      val[0],
-			Name:      val[1],
-			StartDate: val[3],
-			EndDate:   val[4],
-		}
-		res = append(res, stock)
+	return result, nil
+}
+
+func toM(v interface{}) (m *bson.M, err error) {
+	data, err := bson.Marshal(v)
+	if err != nil {
+		return
 	}
-	return res, nil
+	err = bson.Unmarshal(data, &m)
+	return
 }
