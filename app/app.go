@@ -20,6 +20,7 @@ func Init() {
 	if err := initConfig(); err != nil {
 		panic(err)
 	}
+	var err error
 	// if err := mongo.CreateCollection("test2"); err != nil {
 	// 	fmt.Println(err.Error())
 	// }
@@ -32,9 +33,9 @@ func Init() {
 	// fmt.Println(count)
 	// stock := fetcher.GetAllSecurities(fetcher.STOCK, "2020-03-12")
 	// fmt.Println(stock)
-	err := service.GetStockInfo("600139.XSHG")
-	fmt.Println(err)
-	err = service.GetPricesByDay("600139.XSHG", 2)
+	// err := service.GetStockInfo("600139.XSHG")
+	// fmt.Println(err)
+	err = service.GetPricesByDay("600139.XSHG", 5000)
 	// bar, _ := fetcher.GetPrice("600139.XSHG", fetcher.Day, 1)
 	fmt.Println(err)
 	stock, _ := models.GetStockInfoByCode("600139.XSHG")

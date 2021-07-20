@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:10:50
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-25 00:25:55
+ * @Last Modified time: 2021-05-18 14:47:24
  */
 package database
 
@@ -19,6 +19,10 @@ import (
 
 func Collection() *mongo.Collection {
 	return mongodb.GetCollectionByName("stock")
+}
+
+func Basic() *mongo.Collection {
+	return mongodb.GetCollectionByName("basic")
 }
 
 func InsertOne(data interface{}) error {

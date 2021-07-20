@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 17:25:36
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-25 00:27:39
+ * @Last Modified time: 2021-05-18 14:47:53
  */
 
 package models
@@ -85,10 +85,6 @@ func parsePriceInfo(c *ctx.Context) ([]interface{}, error) {
 		price.LowLimit, _ = strconv.ParseFloat(val[9], 10)
 		price.Avg, _ = strconv.ParseFloat(val[10], 10)
 		price.PreClose, _ = strconv.ParseFloat(val[11], 10)
-		// m, err := toM(price)
-		// if err != nil {
-		// 	return nil, err
-		// }
 		prices = append(prices, price)
 	}
 	return prices, nil

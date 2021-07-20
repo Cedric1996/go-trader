@@ -20,6 +20,7 @@ var (
 )
 
 // GetQueryCount return remain count of query daily.
+// 获取当日剩余查询条数
 func GetQueryCount(c *ctx.Context) int64 {
 	params := map[string]interface{}{
 		"method": "get_query_count",
@@ -39,6 +40,7 @@ func GetQueryCount(c *ctx.Context) int64 {
 	return n
 }
 
+// 获取所有标的信息
 func GetAllSecurities(c *ctx.Context, securityType SecurityType, t string) string {
 	params := map[string]interface{}{
 		"method": "get_all_securities",
@@ -54,6 +56,7 @@ func GetAllSecurities(c *ctx.Context, securityType SecurityType, t string) strin
 	return string(res)
 }
 
+// 获取单个标的信息
 func GetSecurityInfo(c *ctx.Context, code string) error {
 	params := map[string]interface{}{
 		"method": "get_security_info",
@@ -71,6 +74,7 @@ func GetSecurityInfo(c *ctx.Context, code string) error {
 	return nil
 }
 
+// 获取指定时间周期的行情
 func GetPrice(c *ctx.Context, code string, t TimeScope, count int64) error {
 	params := map[string]interface{}{
 		"method": "get_price",
@@ -102,6 +106,7 @@ func GetPrice(c *ctx.Context, code string, t TimeScope, count int64) error {
 }
 */
 
+// 获取指定时间段的行情数据
 func GetPriceWithPeriod(c *ctx.Context, code string, t TimeScope, begin string, end string) string {
 	params := map[string]interface{}{
 		"method":   "get_price_period",
@@ -119,6 +124,7 @@ func GetPriceWithPeriod(c *ctx.Context, code string, t TimeScope, begin string, 
 	return string(res)
 }
 
+// 获取标的当前价格
 func GetCurrentPrice(c *ctx.Context, code string) string {
 	params := map[string]interface{}{
 		"method": "get_current_price",
@@ -133,6 +139,7 @@ func GetCurrentPrice(c *ctx.Context, code string) string {
 	return string(res)
 }
 
+// 获取集合竞价 tick 数据
 func GetCallAuction(c *ctx.Context, code string, begin string, end string) string {
 	params := map[string]interface{}{
 		"method":   "get_call_auction",
@@ -149,6 +156,7 @@ func GetCallAuction(c *ctx.Context, code string, begin string, end string) strin
 	return string(res)
 }
 
+// 获取最新 tick 数据
 func GetCurrentTick(c *ctx.Context, code string) string {
 	params := map[string]interface{}{
 		"method": "get_current_tick",
