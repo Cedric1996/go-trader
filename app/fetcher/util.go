@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var token string
@@ -44,4 +45,10 @@ func Token() string {
 	}
 	token = string(res)
 	return token
+}
+
+
+func PostRefDate() string {
+	t:= strings.Split(time.Now().Format(time.RFC3339), "T")[0]
+	return t
 }

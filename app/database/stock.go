@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:10:50
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-05-18 14:47:24
+ * @Last Modified time: 2021-07-25 15:19:37
  */
 package database
 
@@ -17,7 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Collection() *mongo.Collection {
+func Stock() *mongo.Collection {
 	return mongodb.GetCollectionByName("stock")
 }
 
@@ -27,7 +27,7 @@ func Basic() *mongo.Collection {
 
 func InsertOne(data interface{}) error {
 	ctx := context.Background()
-	_, err := Collection().InsertOne(ctx, data)
+	_, err := Stock().InsertOne(ctx, data)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -37,7 +37,7 @@ func InsertOne(data interface{}) error {
 
 func InsertMany(data []interface{}) error {
 	ctx := context.Background()
-	_, err := Collection().InsertMany(ctx, data)
+	_, err := Stock().InsertMany(ctx, data)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -49,7 +49,7 @@ func Update(filter bson.M, update bson.D) error {
 	opt := &options.UpdateOptions{}
 	opt.SetUpsert(true)
 
-	updateResult, err := Collection().UpdateOne(context.TODO(), filter, update, opt)
+	updateResult, err := Stock().UpdateOne(context.TODO(), filter, update, opt)
 	if err != nil {
 		log.Fatal(err)
 		return err

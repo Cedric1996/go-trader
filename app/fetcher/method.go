@@ -82,6 +82,7 @@ func GetPrice(c *ctx.Context, code string, t TimeScope, count int64) error {
 		"code":   code,
 		"unit":   t,
 		"count":  count,
+		"fq_ref_date": PostRefDate(),
 	}
 	c.Params = params
 	res, err := Request(c)
@@ -115,6 +116,7 @@ func GetPriceWithPeriod(c *ctx.Context, code string, t TimeScope, begin string, 
 		"unit":     t,
 		"date":     begin,
 		"end_date": end,
+		"fq_ref_date": PostRefDate(),
 	}
 	c.Params = params
 	res, err := Request(c)

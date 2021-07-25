@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-24 18:01:14
+ * @Last Modified time: 2021-07-25 14:54:29
  */
 package service
 
@@ -21,7 +21,7 @@ func GetPricesByDay(code string, count int64) error {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 		return err
 	}
-	if err := models.UpdatePricesByDay(c); err != nil {
+	if err := models.UpdateStockPriceDay(c); err != nil {
 		return err
 	}
 	return nil

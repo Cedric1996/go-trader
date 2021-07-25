@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-24 12:26:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-05-18 21:15:59
+ * @Last Modified time: 2021-07-25 11:37:09
  */
 
 package models
@@ -41,7 +41,7 @@ func InsertStockInfo(stocks []interface{}) error {
 func GetStockInfoByCode(code string) (*Stock, error) {
 	result := &Stock{}
 	filter := bson.M{"code": code}
-	err := database.Collection().FindOne(context.Background(), filter).Decode(result)
+	err := database.Stock().FindOne(context.Background(), filter).Decode(result)
 	if err != nil {
 		return nil, fmt.Errorf("get stock info: %s error", code)
 	}
