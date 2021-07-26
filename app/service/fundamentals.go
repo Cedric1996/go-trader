@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-03 16:36:43
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 14:46:33
+ * @Last Modified time: 2021-07-26 20:35:47
  */
 package service
 
@@ -15,7 +15,10 @@ import (
 
 func GetFundamentalsData(table fetcher.FinTable, code, date string) error {
 	c := &ctx.Context{}
-	err := fetcher.GetFundamentals(c, table, code, date)
+	if len(date) == 0 {
+		date = today()
+	}
+	err := fetcher.GetFundamentals(c, table, code, date, 10)
 	if err != nil {
 		fmt.Printf("ERROR: GetFundamentalsData error: %s\n", err)
 		return nil

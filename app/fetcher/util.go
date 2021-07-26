@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:04:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 16:07:04
+ * @Last Modified time: 2021-07-26 20:34:20
  */
 
 package fetcher
@@ -49,11 +49,6 @@ func Token() string {
 
 
 func PostRefDate() string {
-	t:= strings.Split(time.Now().Format(time.RFC3339), "T")[0]
-	return t
-}
-
-func Today() string {
 	t:= strings.Split(time.Now().Format(time.RFC3339), "T")[0]
 	return t
 }

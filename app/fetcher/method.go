@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 15:22:01
+ * @Last Modified time: 2021-07-26 20:32:09
  */
 
 package fetcher
@@ -75,13 +75,14 @@ func GetSecurityInfo(c *ctx.Context, code string) error {
 }
 
 // 获取指定时间周期的行情
-func GetPrice(c *ctx.Context, code string, t TimeScope, count int64) error {
+func GetPrice(c *ctx.Context, code, date string, t TimeScope, count int64) error {
 	params := map[string]interface{}{
 		"method": "get_price",
 		"token":  Token(),
 		"code":   code,
 		"unit":   t,
 		"count":  count,
+		"end_date": date,
 		"fq_ref_date": PostRefDate(),
 	}
 	c.Params = params
@@ -285,13 +286,14 @@ func GetIndustryStock(c *ctx.Context, code, date string) error {
 
 
 // Query 1000 data once by default.
-func GetFundamentals(c *ctx.Context, table FinTable, code, date string) error {
+func GetFundamentals(c *ctx.Context, table FinTable, code, date string, count int64) error {
 	params := map[string]interface{}{
 		"method": "get_fundamentals",
 		"token":  Token(),
 		"table":  table,
 		"code":   code,
 		"date":   date,
+		"count": count,
 	}
 	c.Params = params
 	res, err := Request(c)

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:02:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 16:13:00
+ * @Last Modified time: 2021-07-26 20:35:22
  */
 
 package app
@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.cedric1996.com/go-trader/app/database"
+	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.com/spf13/viper"
 )
@@ -32,7 +33,7 @@ func Init() {
 	// fmt.Println(count)
 	// stock := fetcher.GetAllSecurities(fetcher.STOCK, "2020-03-12")
 	// fmt.Println(stock)
-	err = service.GetModuleList("concept", "sw_l3")
+	// err = service.GetModuleList("concept", "sw_l3")
 	// fmt.Println(err)
 	// err = service.GetPricesByDay("600139.XSHG", 1)
 	// bar, _ := fetcher.GetPrice("600139.XSHG", fetcher.Day, 1)
@@ -43,8 +44,7 @@ func Init() {
 	// fmt.Println(stocks)
 	// weights := fetcher.GetIndexWeights("000001.XSHE,000002.XSHE", "2021-04-02")
 	// fmt.Println(weights)
-	// data := service.GetFundamentalsData(fetcher.Balance, "000001.XSHE", "2021-04-02")
-	// fmt.Println(data)
+	err = service.GetFundamentalsData(fetcher.Valuation, "000001.XSHE", "")
 	// err = models.InitStockTableIndexes()
 	fmt.Println(err)
 

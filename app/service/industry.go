@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-25 16:35:21
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 16:40:53
+ * @Last Modified time: 2021-07-26 20:35:53
  */
 package service
 
@@ -70,18 +70,20 @@ func getModulesDetail(c *ctx.Context) error {
 	}
 	modules = modules[0:10]
 	for _, module := range modules {
-		go getModuleDetail(&models.ConceptModule{
+		getModuleDetail(&models.ConceptModule{
 			Module: module,
-			Date: fetcher.Today(),
+			Date: today(),
 		})
 	}
 	return nil
 }
 
 func getModuleDetail(module *models.ConceptModule) {
-	if err := fetcher.GetConceptStock(&ctx.Context{}, module.Module.Code, module.Date); err != nil {
+	c := &ctx.Context{}
+	if err := fetcher.GetConceptStock(c, module.Module.Code, module.Date); err != nil {
 		fmt.Printf("error get concept detail: %s\n", err)
 		return
 	}
-	fmt.Printf("get concept detail: %s\n", module)
+
+	fmt.Printf("get concept detail: %s, %s\n", module, c.ResBody)
 }

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 22:27:16
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-03 17:05:24
+ * @Last Modified time: 2021-07-26 17:01:31
  */
 package fetcher
 
@@ -31,6 +31,7 @@ const (
 * https://www.joinquant.com/help/api/help#Stock:%E8%B4%A2%E5%8A%A1%E6%95%B0%E6%8D%AE%E5%88%97%E8%A1%A8
  */
 const (
+	Valuation FinTable = "valuation"
 	Balance  FinTable = "balance"
 	Income   FinTable = "income"
 	CashFlow FinTable = "cash_flow"
