@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 12:18:52
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-23 22:59:31
+ * @Last Modified time: 2021-07-26 21:01:30
  */
 
 package fetcher
@@ -24,18 +24,39 @@ var (
 	client     = &http.Client{}
 )
 
+type ErrRequestRepeated struct {
+	Data string
+}
+
+// IsErrOrgNotExist checks if an error is a ErrOrgNotExist.
+func IsErrRequestRepeated(err error) bool {
+	_, ok := err.(ErrRequestRepeated)
+	return ok
+}
+
+func (err ErrRequestRepeated) Error() string {
+	return fmt.Sprintf("error request repeated: %s", err.Data)
+}
+
+func fetchData(c *ctx.Context, tag string) error {
+	if err := request(c);err!= nil {
+		return fmt.Errorf("error %s: %s",tag, err)
+	}
+	return nil
+}
+
 // Request create a http request
-func Request(c *ctx.Context) ([]byte, error) {
+func request(c *ctx.Context) error {
 	isRequested, err := checkRequest(c.Params)
 	if err != nil {
-		return nil, err
+		return err
 	} else if isRequested {
-		return nil, nil
+		return  nil
 	}
 
 	bodyStr, err := json.Marshal(c.Params)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req, err := http.NewRequest("POST", JQDATA_URL, strings.NewReader(string(bodyStr)))
 	resp, err := client.Do(req)
@@ -46,9 +67,12 @@ func Request(c *ctx.Context) ([]byte, error) {
 	}()
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return res, nil
+	if err := ParseResponse(c, res); err != nil {
+		return err
+	}
+	return nil
 }
 
 func paramsEncoder(params map[string]interface{}) string {

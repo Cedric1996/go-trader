@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 20:36:13
+ * @Last Modified time: 2021-07-26 20:39:49
  */
 package service
 
@@ -31,7 +31,10 @@ func GetPricesByDay(code string, count int64) error {
  * fetch all stockPriceDay with specified day 
 s*/
 func FetchStockPriceByDay(date string) error {
-	// c := &ctx.Context{}
+	c := &ctx.Context{}
+	if err := fetcher.GetAllSecurities(c, date); err != nil {
+		return err	
+	}
 	// if err := fetcher.GetPrice(c, fetcher.Day, 1); err != nil {
 	// 	fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 	// 	return err
