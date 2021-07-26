@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-24 12:18:39
+ * @Last Modified time: 2021-07-26 15:22:01
  */
 
 package fetcher
@@ -233,7 +233,24 @@ func GetIndexWeights(c *ctx.Context, code string, date string) string {
 	return string(res)
 }
 
-func GetIndustry(c *ctx.Context, code string, date string) string {
+func GetIndustryList(c *ctx.Context, code string) error{
+	params := map[string]interface{}{
+		"method": "get_industries",
+		"token":  Token(),
+		"code":   code,
+	}
+	c.Params = params
+	t, err := Request(c)
+	if err != nil {
+		return fmt.Errorf("get Industry error: %s", err)
+	}
+	if err := ParseResponse(c, t); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetIndustry(c *ctx.Context, code string, date string) error {
 	params := map[string]interface{}{
 		"method": "get_industry",
 		"token":  Token(),
@@ -241,12 +258,31 @@ func GetIndustry(c *ctx.Context, code string, date string) string {
 		"date":   date,
 	}
 	c.Params = params
+	_, err := Request(c)
+	if err != nil {
+		return fmt.Errorf("get Industry error: %s", err)
+	}
+	return nil
+}
+
+func GetIndustryStock(c *ctx.Context, code, date string) error {
+	params := map[string]interface{}{
+		"method": "get_industry_stocks",
+		"token":  Token(),
+		"code":   code,
+		"date":   date,
+	}
+	c.Params = params
 	res, err := Request(c)
 	if err != nil {
-		return fmt.Errorf("get Industry error: %s", err).Error()
+		return fmt.Errorf("error get industry stocks: concept code:%s, err: %s", code, err)
 	}
-	return string(res)
+	if err := ParseResponse(c, res); err != nil {
+		return err
+	}
+	return nil
 }
+
 
 // Query 1000 data once by default.
 func GetFundamentals(c *ctx.Context, table FinTable, code, date string) error {
@@ -260,7 +296,41 @@ func GetFundamentals(c *ctx.Context, table FinTable, code, date string) error {
 	c.Params = params
 	res, err := Request(c)
 	if err != nil {
-		return fmt.Errorf("get Industry error: %s", err)
+		return fmt.Errorf("get Fundamentals error: %s", err)
+	}
+	if err := ParseResponse(c, res); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetConcepts(c *ctx.Context) error {
+	params := map[string]interface{}{
+		"method": "get_concepts",
+		"token":  Token(),
+	}
+	c.Params = params
+	res, err := Request(c)
+	if err != nil {
+		return fmt.Errorf("get concepts error: %s", err)
+	}
+	if err := ParseResponse(c, res); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetConceptStock(c *ctx.Context, code, date string) error {
+	params := map[string]interface{}{
+		"method": "get_concept_stocks",
+		"token":  Token(),
+		"code":   code,
+		"date":   date,
+	}
+	c.Params = params
+	res, err := Request(c)
+	if err != nil {
+		return fmt.Errorf("error get concept stocks: concept code:%s, err: %s", code, err)
 	}
 	if err := ParseResponse(c, res); err != nil {
 		return err
