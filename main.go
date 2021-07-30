@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-13 14:51:05
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-03-18 15:48:43
+ * @Last Modified time: 2021-07-27 23:19:51
  */
 
 package main
@@ -31,6 +31,7 @@ func main() {
 	app.Commands = []cli.Command{
 		cmd.CmdTest,
 		cmd.CmdServer,
+		cmd.CmdFetch,
 		// cmd.CmdServ,
 		// cmd.CmdHook,
 		// cmd.CmdDump,

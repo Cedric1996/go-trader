@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:02:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 20:35:22
+ * @Last Modified time: 2021-07-27 23:21:19
  */
 
 package app
@@ -11,8 +11,6 @@ import (
 	"fmt"
 
 	"github.cedric1996.com/go-trader/app/database"
-	"github.cedric1996.com/go-trader/app/fetcher"
-	"github.cedric1996.com/go-trader/app/service"
 	"github.com/spf13/viper"
 )
 
@@ -20,7 +18,7 @@ func Init() {
 	if err := initConfig(); err != nil {
 		panic(err)
 	}
-	var err error
+	// var err error
 	// if err := mongo.CreateCollection("test2"); err != nil {
 	// 	fmt.Println(err.Error())
 	// }
@@ -44,10 +42,9 @@ func Init() {
 	// fmt.Println(stocks)
 	// weights := fetcher.GetIndexWeights("000001.XSHE,000002.XSHE", "2021-04-02")
 	// fmt.Println(weights)
-	err = service.GetFundamentalsData(fetcher.Valuation, "000001.XSHE", "")
+	// err = service.GetFundamentalsData(fetcher.Valuation, "000001.XSHE", "")
 	// err = models.InitStockTableIndexes()
-	fmt.Println(err)
-
+	// fmt.Println(err)
 }
 
 func initConfig() error {

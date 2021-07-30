@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:10:50
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-25 15:19:37
+ * @Last Modified time: 2021-07-27 23:06:22
  */
 package database
 
@@ -22,12 +22,13 @@ func Stock() *mongo.Collection {
 }
 
 func Basic() *mongo.Collection {
-	return mongodb.GetCollectionByName("basic")
+	return mongodb.GetCollectionByName("stock_info")
 }
+
 
 func InsertOne(data interface{}) error {
 	ctx := context.Background()
-	_, err := Stock().InsertOne(ctx, data)
+	_, err := Basic().InsertOne(ctx, data)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -37,7 +38,7 @@ func InsertOne(data interface{}) error {
 
 func InsertMany(data []interface{}) error {
 	ctx := context.Background()
-	_, err := Stock().InsertMany(ctx, data)
+	_, err := Basic().InsertMany(ctx, data)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -56,5 +57,14 @@ func Update(filter bson.M, update bson.D) error {
 	}
 
 	fmt.Printf("Matched %v documents and updated %v documents.\n", updateResult.UpsertedID, updateResult.UpsertedCount)
+	return nil
+}
+
+func RemoveStockInfo() error {
+	ctx := context.Background()
+
+	if err:= Basic().Drop(ctx);err != nil {
+		return fmt.Errorf("drop collection: stock info with error %v", err)
+	}
 	return nil
 }

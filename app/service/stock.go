@@ -1,8 +1,8 @@
 /*
  * @Author: cedric.jia
  * @Date: 2021-04-24 17:54:29
- * @Last Modified by:   cedric.jia
- * @Last Modified time: 2021-04-24 17:54:29
+ * @Last Modified by: cedric.jia
+ * @Last Modified time: 2021-07-27 23:16:33
  */
 
 package service
@@ -15,19 +15,19 @@ import (
 	"github.cedric1996.com/go-trader/app/models"
 )
 
-// Count should not be greater than 5000.
-func GetStockInfo(code string) error {
-	c := &ctx.Context{}
-	if err := fetcher.GetSecurityInfo(c, code); err != nil {
-		fmt.Printf("ERROR: GetSecurityInfo error: %s\n", err)
+var SecuritySet []string
+
+func GetAllSecurities() error {
+	c:= &ctx.Context{}
+	if err := fetcher.GetAllSecurities(c, today());err!= nil {
+		fmt.Printf("error: GetAllSecurities error: %s\n", err)
 		return err
 	}
-	stocks, err := parseStockInfo(c)
+	securities, err := parseStockInfo(c)
 	if err != nil {
 		return nil
 	}
-
-	if err := models.InsertStockInfo(stocks); err != nil {
+	if err := models.InsertStockInfo(securities); err != nil {
 		return err
 	}
 	return nil
@@ -44,7 +44,8 @@ func parseStockInfo(c *ctx.Context) ([]interface{}, error) {
 	for _, val := range vals {
 		stock := models.Stock{
 			Code:      val[0],
-			Name:      val[1],
+			DisplayName: val[1],
+			Name:      val[2],
 			StartDate: val[3],
 			EndDate:   val[4],
 		}
@@ -52,3 +53,4 @@ func parseStockInfo(c *ctx.Context) ([]interface{}, error) {
 	}
 	return res, nil
 }
+

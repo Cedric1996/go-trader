@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-24 12:26:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-25 11:37:09
+ * @Last Modified time: 2021-07-27 23:16:53
  */
 
 package models
@@ -18,14 +18,18 @@ import (
 type Stock struct {
 	// ID        string  `bson:"_id, omitemptys"`
 	Code      string  `bson:"code, omitempty"`
+	DisplayName string `bson:"display_name"`
 	Name      string  `bson:"name, omitempty"`
 	StartDate string  `bson:"start_date, omitempty"`
 	EndDate   string  `bson:"end_date, omitempty"`
-	Price     []Price `bson:"price, omitempty"`
+	// Price     []Price `bson:"price, omitempty"`
 }
 
 func InsertStockInfo(stocks []interface{}) error {
 	var err error
+	if err := database.RemoveStockInfo();err != nil {
+		return err
+	}
 	if len(stocks) == 1 {
 		err = database.InsertOne(stocks[0])
 	} else {
