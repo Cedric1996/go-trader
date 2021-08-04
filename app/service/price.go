@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-27 23:06:26
+ * @Last Modified time: 2021-08-04 20:24:16
  */
 package service
 
@@ -12,6 +12,7 @@ import (
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
+	"github.cedric1996.com/go-trader/app/service/queue"
 )
 
 // Count should not be greater than 5000.
@@ -32,9 +33,24 @@ func GetPricesByDay(code string, count int64) error {
  * Stock table
  */
 func InitStockPrice() error {
-	if err := fetchTradeDateCount("", ""); err != nil {
+	// if err := fetchTradeDateCount("", ""); err != nil {
+	// 	return err
+	// }
+	initStockQueue, err := queue.NewQueue("init", 4, func(data interface{}) error {
+		code := data.(string)
+		if err := GetPricesByDay(code, 1); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return err
 	}
+	initStockQueue.Run()
+	for i, _ := range SecuritySet {
+		initStockQueue.Push(i)
+	}
+	initStockQueue.Close()
 	return nil
 }
 

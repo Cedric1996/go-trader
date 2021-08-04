@@ -2,19 +2,25 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 12:26:16
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-24 18:06:31
+ * @Last Modified time: 2021-08-04 20:18:57
  */
 package mongodb
 
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+)
+
+var (
+	databaseSync  sync.Once
+	mongoDatabase *mongo.Database
 )
 
 func client() *mongo.Client {
@@ -37,7 +43,10 @@ func client() *mongo.Client {
 }
 
 func database() *mongo.Database {
-	return client().Database(viper.GetString("mongo.database"))
+	databaseSync.Do(func() {
+		mongoDatabase = client().Database(viper.GetString("mongo.database"))
+	})
+	return mongoDatabase
 }
 
 func GetCollectionByName(name string) *mongo.Collection {

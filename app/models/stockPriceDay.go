@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"fmt"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/database"
@@ -12,42 +11,42 @@ import (
 )
 
 type StockPriceDay struct {
-	Price	`bson:",inline"`
-	Code      string  `bson:"code, omitempty"`
+	Price `bson:",inline"`
+	Code  string `bson:"code, omitempty"`
 }
 
 func UpdateStockPriceDay(c *ctx.Context) error {
 	priceChan := make(chan *Price, 10)
-	c.Params["priceChan"] = priceChan	
+	c.Params["priceChan"] = priceChan
 	go parsePriceInfo(c)
 
 	code := c.Params["code"]
 	opts := options.FindOneAndUpdate().SetUpsert(true)
-	updateCount:=0
+	updateCount := 0
 
 	for price := range priceChan {
 		stock := &StockPriceDay{
-			Code: code.(string),
+			Code:  code.(string),
 			Price: *price,
 		}
 		filter := bson.M{"code": code, "timestamp": price.Timestamp}
 		update := bson.D{{"$set", stock}}
 		err := database.Stock().FindOneAndUpdate(context.TODO(), filter, update, opts).Err()
-		if err != nil {
+		if err != nil && err != mongo.ErrNoDocuments {
 			return err
 		}
 		updateCount++
 	}
 
-	fmt.Printf("updated document %v.\n", updateCount)
+	// fmt.Printf("updated document %v.\n", updateCount)
 	return nil
 }
 
-func InsertStockPriceDay (c *ctx.Context) error {
+func InsertStockPriceDay(c *ctx.Context) error {
 	return nil
 }
 
-func InitStockTableIndexes () error{
+func InitStockTableIndexes() error {
 	indexModel := mongo.IndexModel{
 		Keys: bson.D{{"code", 1}, {"timestamp", -1}},
 	}
