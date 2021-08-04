@@ -9,17 +9,37 @@ package service
 
 import (
 	"fmt"
+	"sync"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
 )
 
-var SecuritySet []string
+var (
+	securitySetInit      sync.Once
+	SecuritySet          map[string]string
+	DefaultDailyBarCount int
+)
+
+func Init() {
+	securitySetInit.Do(func() {
+		securities, err := models.GetAllSecurities()
+		if err != nil {
+			fmt.Printf("error: Init securities set error: %s\n", err)
+			return
+		}
+		SecuritySet = make(map[string]string)
+		for _, security := range securities {
+			SecuritySet[security.Code] = security.StartDate
+		}
+	})
+	return
+}
 
 func GetAllSecurities() error {
-	c:= &ctx.Context{}
-	if err := fetcher.GetAllSecurities(c, today());err!= nil {
+	c := &ctx.Context{}
+	if err := fetcher.GetAllSecurities(c, today()); err != nil {
 		fmt.Printf("error: GetAllSecurities error: %s\n", err)
 		return err
 	}
@@ -43,14 +63,13 @@ func parseStockInfo(c *ctx.Context) ([]interface{}, error) {
 	vals := resBody.GetVals()
 	for _, val := range vals {
 		stock := models.Stock{
-			Code:      val[0],
+			Code:        val[0],
 			DisplayName: val[1],
-			Name:      val[2],
-			StartDate: val[3],
-			EndDate:   val[4],
+			Name:        val[2],
+			StartDate:   val[3],
+			EndDate:     val[4],
 		}
 		res = append(res, stock)
 	}
 	return res, nil
 }
-

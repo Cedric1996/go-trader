@@ -26,7 +26,7 @@ type Stock struct {
 	// Price     []Price `bson:"price, omitempty"`
 }
 
-func GetSecurities() (securities []Stock, err error) {
+func GetAllSecurities() (securities []Stock, err error) {
 	securities = make([]Stock, 0)
 	ctx := context.Background()
 	cur, err := database.Basic().Find(ctx, bson.D{})

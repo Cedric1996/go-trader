@@ -28,20 +28,27 @@ func GetPricesByDay(code string, count int64) error {
 }
 
 /**
- * fetch all stockPriceDay with specified day
-s*/
-func FetchStockPriceByDay(date string) error {
-	_, err := models.GetSecurities()
-	if err != nil {
+ * Init stock price date from 2018-01-01 and update
+ * Stock table
+ */
+func InitStockPrice() error {
+	if err := fetchTradeDateCount("", ""); err != nil {
 		return err
 	}
 	return nil
 }
 
 /**
+ * fetch all stockPriceDay with specified day
+s*/
+func FetchStockPriceByDay(date string) error {
+	return nil
+}
+
+/**
  * fetch trade days between begin/end date
  */
-func fetchTradeDates(beginDate, endDate string) error {
+func fetchTradeDateCount(beginDate, endDate string) error {
 	c := &ctx.Context{}
 	if len(beginDate) == 0 {
 		beginDate = defaultBeginDate()
@@ -50,8 +57,9 @@ func fetchTradeDates(beginDate, endDate string) error {
 		endDate = today()
 	}
 	if err := fetcher.GetTradeDates(c, beginDate, endDate); err != nil {
-		fmt.Printf("ERROR: GetTradeDates error: %s\n", err)
+		fmt.Printf("error: GetTradeDates error: %s\n", err)
 		return err
 	}
+	DefaultDailyBarCount = len(c.ResBody.GetVals())
 	return nil
 }

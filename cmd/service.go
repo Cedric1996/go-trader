@@ -18,24 +18,29 @@ import (
 
 var (
 	CmdFetch = cli.Command{
-		Name:  "fetch",
-		Usage: "fetch data manually",
+		Name:  "price",
+		Usage: "fetch price data manually",
 		Subcommands: []cli.Command{
-			subcmdAllSecurities,
+			subcmdPriceInit,
 			subcmdPriceDaily,
 		},
 	}
-
-	subcmdAllSecurities = cli.Command{
+	CmdSecurity = cli.Command{
 		Name:   "security",
 		Usage:  "fetch all stock securities info and update stock_info table",
 		Action: runFetchAllSecurities,
 	}
 
+	subcmdPriceInit = cli.Command{
+		Name:   "init",
+		Usage:  "init stock price and update stock table",
+		Action: runStockPriceInit,
+	}
+
 	subcmdPriceDaily = cli.Command{
-		Name:   "price",
+		Name:   "daily",
 		Usage:  "fetch daily stock price and update stock table",
-		Action: runFetchStockPriceDay,
+		Action: runStockPriceDaily,
 	}
 )
 
@@ -48,11 +53,19 @@ func runFetchAllSecurities(c *cli.Context) error {
 	return nil
 }
 
-func runFetchStockPriceDay(c *cli.Context) error {
+func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
 	t := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
 	if err := service.FetchStockPriceByDay(t); err != nil {
 		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
+	}
+	return nil
+}
+
+func runStockPriceInit(c *cli.Context) error {
+	app.Init()
+	if err := service.InitStockPrice(); err != nil {
+		return fmt.Errorf("execute init stock price fail, please check it: %s", err)
 	}
 	return nil
 }
