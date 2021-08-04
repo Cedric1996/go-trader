@@ -27,22 +27,31 @@ func GetPricesByDay(code string, count int64) error {
 	return nil
 }
 
-/** 
- * fetch all stockPriceDay with specified day 
+/**
+ * fetch all stockPriceDay with specified day
 s*/
 func FetchStockPriceByDay(date string) error {
-	c := &ctx.Context{}
-	if SecuritySet == nil {
-		if err := fetcher.GetAllSecurities(c, date); err != nil {
-			return err	
-		}
+	_, err := models.GetSecurities()
+	if err != nil {
+		return err
 	}
-	// if err := fetcher.GetPrice(c, fetcher.Day, 1); err != nil {
-	// 	fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
-	// 	return err
-	// }
-	// if err := models.UpdateStockPriceDay(c); err != nil {
-	// 	return err
-	// }
+	return nil
+}
+
+/**
+ * fetch trade days between begin/end date
+ */
+func fetchTradeDates(beginDate, endDate string) error {
+	c := &ctx.Context{}
+	if len(beginDate) == 0 {
+		beginDate = defaultBeginDate()
+	}
+	if len(endDate) == 0 {
+		endDate = today()
+	}
+	if err := fetcher.GetTradeDates(c, beginDate, endDate); err != nil {
+		fmt.Printf("ERROR: GetTradeDates error: %s\n", err)
+		return err
+	}
 	return nil
 }

@@ -23,7 +23,7 @@ func GetQueryCount(c *ctx.Context) error {
 		"token":  Token(),
 	}
 	c.Params = params
-	return fetchData(c, "get query count") 
+	return fetchData(c, "get query count")
 }
 
 // 获取所有标的信息
@@ -32,11 +32,11 @@ func GetAllSecurities(c *ctx.Context, date string) error {
 		"method": "get_all_securities",
 		"token":  Token(),
 		// By default, go-trader fetch stock infos
-		"code":   "stock",
-		"date":   date,
+		"code": "stock",
+		"date": date,
 	}
 	c.Params = params
-	return fetchData(c, "get all securities") 
+	return fetchData(c, "get all securities")
 }
 
 // 获取单个标的信息
@@ -53,12 +53,12 @@ func GetSecurityInfo(c *ctx.Context, code string) error {
 // 获取指定时间周期的行情
 func GetPrice(c *ctx.Context, code, date string, t TimeScope, count int64) error {
 	params := map[string]interface{}{
-		"method": "get_price",
-		"token":  Token(),
-		"code":   code,
-		"unit":   t,
-		"count":  count,
-		"end_date": date,
+		"method":      "get_price",
+		"token":       Token(),
+		"code":        code,
+		"unit":        t,
+		"count":       count,
+		"end_date":    date,
 		"fq_ref_date": PostRefDate(),
 	}
 	c.Params = params
@@ -80,16 +80,16 @@ func GetPrice(c *ctx.Context, code, date string, t TimeScope, count int64) error
 // 获取指定时间段的行情数据
 func GetPriceWithPeriod(c *ctx.Context, code string, t TimeScope, begin string, end string) error {
 	params := map[string]interface{}{
-		"method":   "get_price_period",
-		"token":    Token(),
-		"code":     code,
-		"unit":     t,
-		"date":     begin,
-		"end_date": end,
+		"method":      "get_price_period",
+		"token":       Token(),
+		"code":        code,
+		"unit":        t,
+		"date":        begin,
+		"end_date":    end,
 		"fq_ref_date": PostRefDate(),
 	}
 	c.Params = params
-	return fetchData(c, "get price with period") 
+	return fetchData(c, "get price with period")
 }
 
 // 获取标的当前价格
@@ -100,7 +100,7 @@ func GetCurrentPrice(c *ctx.Context, code string) error {
 		"code":   code,
 	}
 	c.Params = params
-	return fetchData(c, "get current price") 
+	return fetchData(c, "get current price")
 }
 
 // 获取集合竞价 tick 数据
@@ -113,7 +113,7 @@ func GetCallAuction(c *ctx.Context, code string, begin string, end string) error
 		"end_date": end,
 	}
 	c.Params = params
-	return fetchData(c, "get call auction with period ") 
+	return fetchData(c, "get call auction with period ")
 }
 
 // 获取最新 tick 数据
@@ -124,7 +124,7 @@ func GetCurrentTick(c *ctx.Context, code string) error {
 		"code":   code,
 	}
 	c.Params = params
-	return fetchData(c, "get current tick") 
+	return fetchData(c, "get current tick")
 }
 
 func GetCurrentTicks(c *ctx.Context, codes string) error {
@@ -134,7 +134,7 @@ func GetCurrentTicks(c *ctx.Context, codes string) error {
 		"code":   codes,
 	}
 	c.Params = params
-	return fetchData(c, "get current tick") 
+	return fetchData(c, "get current tick")
 }
 
 func GetFundInfo(c *ctx.Context, code string, date string) error {
@@ -145,7 +145,7 @@ func GetFundInfo(c *ctx.Context, code string, date string) error {
 		"date":   date,
 	}
 	c.Params = params
-	return fetchData(c, "get fund info") 
+	return fetchData(c, "get fund info")
 }
 
 func GetIndexStocks(c *ctx.Context, code string, date string) error {
@@ -156,7 +156,7 @@ func GetIndexStocks(c *ctx.Context, code string, date string) error {
 		"date":   date,
 	}
 	c.Params = params
-	return fetchData(c, "get Index Stock") 
+	return fetchData(c, "get Index Stock")
 }
 
 func GetIndexWeights(c *ctx.Context, code string, date string) error {
@@ -167,17 +167,17 @@ func GetIndexWeights(c *ctx.Context, code string, date string) error {
 		"date":   date,
 	}
 	c.Params = params
-	return fetchData(c, "get Index Weights") 
+	return fetchData(c, "get Index Weights")
 }
 
-func GetIndustryList(c *ctx.Context, code string) error{
+func GetIndustryList(c *ctx.Context, code string) error {
 	params := map[string]interface{}{
 		"method": "get_industries",
 		"token":  Token(),
 		"code":   code,
 	}
 	c.Params = params
-	return fetchData(c, "get industry list") 
+	return fetchData(c, "get industry list")
 }
 
 func GetIndustry(c *ctx.Context, code string, date string) error {
@@ -188,7 +188,7 @@ func GetIndustry(c *ctx.Context, code string, date string) error {
 		"date":   date,
 	}
 	c.Params = params
-	return fetchData(c, "get industry") 
+	return fetchData(c, "get industry")
 }
 
 func GetIndustryStock(c *ctx.Context, code, date string) error {
@@ -199,9 +199,8 @@ func GetIndustryStock(c *ctx.Context, code, date string) error {
 		"date":   date,
 	}
 	c.Params = params
-	return fetchData(c, "get industry stocks") 
+	return fetchData(c, "get industry stocks")
 }
-
 
 // Query 1000 data once by default.
 func GetFundamentals(c *ctx.Context, table FinTable, code, date string, count int64) error {
@@ -211,10 +210,10 @@ func GetFundamentals(c *ctx.Context, table FinTable, code, date string, count in
 		"table":  table,
 		"code":   code,
 		"date":   date,
-		"count": count,
+		"count":  count,
 	}
 	c.Params = params
-	return fetchData(c, "get Fundamentals") 
+	return fetchData(c, "get Fundamentals")
 }
 
 func GetConcepts(c *ctx.Context) error {
@@ -223,7 +222,7 @@ func GetConcepts(c *ctx.Context) error {
 		"token":  Token(),
 	}
 	c.Params = params
-	return fetchData(c, "get concepts") 
+	return fetchData(c, "get concepts")
 }
 
 func GetConceptStock(c *ctx.Context, code, date string) error {
@@ -234,5 +233,20 @@ func GetConceptStock(c *ctx.Context, code, date string) error {
 		"date":   date,
 	}
 	c.Params = params
-	return fetchData(c, "get concept stocks") 
+	return fetchData(c, "get concept stocks")
 }
+
+func GetTradeDates(c *ctx.Context, beginDate, endDate string) error {
+	params := map[string]interface{}{
+		"method":   "get_trade_days",
+		"token":    Token(),
+		"date":     beginDate,
+		"end_date": endDate,
+	}
+	c.Params = params
+	return fetchData(c, "fetch trade dates")
+}
+
+// func RunQuery(c *ctx.Context) error {
+
+// }

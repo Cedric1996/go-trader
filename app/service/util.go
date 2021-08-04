@@ -13,6 +13,10 @@ import (
 )
 
 func today() string {
-	t:= strings.Split(time.Now().Format(time.RFC3339), "T")[0]
+	t := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
 	return t
+}
+
+func defaultBeginDate() string {
+	return "2018-01-01"
 }

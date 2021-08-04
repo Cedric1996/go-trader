@@ -25,7 +25,6 @@ func Basic() *mongo.Collection {
 	return mongodb.GetCollectionByName("stock_info")
 }
 
-
 func InsertOne(data interface{}) error {
 	ctx := context.Background()
 	_, err := Basic().InsertOne(ctx, data)
@@ -63,7 +62,7 @@ func Update(filter bson.M, update bson.D) error {
 func RemoveStockInfo() error {
 	ctx := context.Background()
 
-	if err:= Basic().Drop(ctx);err != nil {
+	if err := Basic().Drop(ctx); err != nil {
 		return fmt.Errorf("drop collection: stock info with error %v", err)
 	}
 	return nil

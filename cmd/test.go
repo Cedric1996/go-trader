@@ -43,7 +43,6 @@ var (
 
 func runTest(c *cli.Context) error {
 	app.Init()
-
 	return nil
 }
 
