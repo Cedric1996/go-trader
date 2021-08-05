@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-05 11:59:22
+ * @Last Modified time: 2021-08-05 14:06:12
  */
 package service
 
@@ -12,7 +12,7 @@ import (
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
-	"github.cedric1996.com/go-trader/app/service/queue"
+	"github.cedric1996.com/go-trader/app/modules/queue"
 )
 
 // Count should not be greater than 5000.
@@ -30,7 +30,7 @@ func GetPricesByDay(code string, count int) error {
 
 func initStockPriceByDay(code string, count int) error {
 	c := &ctx.Context{}
-	if err := fetcher.GetPrice(c, code, "2020-12-29", fetcher.Day, count); err != nil {
+	if err := fetcher.GetPrice(c, code, "2020-10-14", fetcher.Day, count); err != nil {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 		return err
 	}
@@ -89,5 +89,18 @@ func fetchTradeDateCount(beginDate, endDate string) error {
 		return err
 	}
 	DefaultDailyBarCount = len(c.ResBody.GetVals())
+	return nil
+}
+
+/**
+ *	find stock price with code from Stock table, return a slice of
+ *  stock prices
+ */
+func GetStockPriceByCode(code string) error {
+	stocks, err := models.GetStockPriceByCode(code)
+	if err != nil {
+		return err
+	}
+	fmt.Println(stocks)
 	return nil
 }

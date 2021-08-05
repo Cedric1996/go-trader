@@ -3,6 +3,7 @@ module github.cedric1996.com/go-trader
 go 1.14
 
 require (
+	code.gitea.io/gitea v1.14.5 // indirect
 	gitea.com/lunny/log v0.0.0-20190322053110-01b5df579c4e
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect

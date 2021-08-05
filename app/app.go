@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:02:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-27 23:21:19
+ * @Last Modified time: 2021-08-05 12:12:40
  */
 
 package app
@@ -26,6 +26,7 @@ func Init() {
 	// if err := s.Insert(); err != nil {
 	// 	fmt.Println(err.Error())
 	// }
+	err := service.GetStockPriceByCode("000001.XSHE")
 	// token := fetcher.Token()
 	// fmt.Println(token)
 	// count := fetcher.GetQueryCount()
@@ -45,7 +46,7 @@ func Init() {
 	// fmt.Println(weights)
 	// err = service.GetFundamentalsData(fetcher.Valuation, "000001.XSHE", "")
 	// err = models.InitStockTableIndexes()
-	// fmt.Println(err)
+	fmt.Println(err)
 }
 
 func initConfig() error {

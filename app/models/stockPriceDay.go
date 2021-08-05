@@ -69,3 +69,36 @@ func InitStockTableIndexes() error {
 	}
 	return nil
 }
+
+func GetStockPriceByCode(code string) ([]*StockPriceDay, error) {
+	// Pass these options to the Find method
+	findOptions := options.Find()
+
+	// Here's an array in which you can store the decoded documents
+	var results []*StockPriceDay
+
+	// Passing bson.D{{}} as the filter matches all documents in the collection
+	cur, err := database.Stock().Find(context.TODO(), bson.D{{"code", code}}, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// Finding multiple documents returns a cursor
+	// Iterating through the cursor allows us to decode documents one at a time
+	for cur.Next(context.TODO()) {
+
+		// create a value into which the single document can be decoded
+		var elem StockPriceDay
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	// Close the cursor once finished
+	return results, nil
+}

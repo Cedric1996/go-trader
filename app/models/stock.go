@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-24 12:26:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-27 23:16:53
+ * @Last Modified time: 2021-08-05 12:08:52
  */
 
 package models
@@ -63,16 +63,6 @@ func InsertStockInfo(stocks []interface{}) error {
 		return fmt.Errorf("insert stocks error: %v", err)
 	}
 	return nil
-}
-
-func GetStockInfoByCode(code string) (*Stock, error) {
-	result := &Stock{}
-	filter := bson.M{"code": code}
-	err := database.Stock().FindOne(context.Background(), filter).Decode(result)
-	if err != nil {
-		return nil, fmt.Errorf("get stock info: %s error", code)
-	}
-	return result, nil
 }
 
 func toM(v interface{}) (m *bson.M, err error) {
