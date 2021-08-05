@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 17:25:36
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-25 15:57:54
+ * @Last Modified time: 2021-08-04 21:00:43
  */
 
 package models
@@ -32,7 +32,7 @@ type Price struct {
 	PreClose  float64 `bson:"preClose, omitempty"`
 }
 
-func parsePriceInfo(c *ctx.Context){
+func parsePriceInfo(c *ctx.Context) {
 	resBody := c.ResBody
 	code := c.Params["code"]
 	priceChan := c.Params["priceChan"].(chan *Price)
@@ -41,8 +41,11 @@ func parsePriceInfo(c *ctx.Context){
 		return
 	}
 	vals := resBody.GetVals()
-	// prices := make([]interface{}, 0)
+
 	for _, val := range vals {
+		if len(val) < 12 {
+			continue
+		}
 		t, _ := time.Parse(time.RFC3339, val[0]+"T15:00:00Z")
 		price := &Price{}
 		price.Timestamp = uint32(t.Unix())

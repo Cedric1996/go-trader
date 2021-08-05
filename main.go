@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-13 14:51:05
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-27 23:19:51
+ * @Last Modified time: 2021-08-04 21:54:50
  */
 
 package main
@@ -32,6 +32,8 @@ func main() {
 		cmd.CmdTest,
 		cmd.CmdServer,
 		cmd.CmdFetch,
+		cmd.CmdCount,
+		cmd.CmdSecurity,
 		// cmd.CmdServ,
 		// cmd.CmdHook,
 		// cmd.CmdDump,

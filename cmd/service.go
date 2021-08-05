@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-27 23:21:09
+ * @Last Modified time: 2021-08-04 21:54:16
  */
 package cmd
 
@@ -17,6 +17,18 @@ import (
 )
 
 var (
+	CmdCount = cli.Command{
+		Name:  "count",
+		Usage: "fetch spare query count",
+		Action: func(c *cli.Context) error {
+			app.Init()
+			if err := service.GetQueryCount(); err != nil {
+				return fmt.Errorf("execute fetch all security cmd fail, please check it: %s", err)
+			}
+			return nil
+		},
+	}
+
 	CmdFetch = cli.Command{
 		Name:  "price",
 		Usage: "fetch price data manually",

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-03 16:36:43
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 20:35:47
+ * @Last Modified time: 2021-08-04 21:53:39
  */
 package service
 
@@ -24,4 +24,14 @@ func GetFundamentalsData(table fetcher.FinTable, code, date string) error {
 		return nil
 	}
 	return err
+}
+
+func GetQueryCount() error {
+	c := &ctx.Context{}
+	if err := fetcher.GetQueryCount(c); err != nil {
+		fmt.Printf("ERROR: GetQueryCount error: %s\n", err)
+		return err
+	}
+	fmt.Printf("Query count: %s\n", c.ResBody)
+	return nil
 }

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-04 20:24:16
+ * @Last Modified time: 2021-08-05 11:59:22
  */
 package service
 
@@ -16,13 +16,25 @@ import (
 )
 
 // Count should not be greater than 5000.
-func GetPricesByDay(code string, count int64) error {
+func GetPricesByDay(code string, count int) error {
 	c := &ctx.Context{}
 	if err := fetcher.GetPrice(c, code, today(), fetcher.Day, count); err != nil {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 		return err
 	}
 	if err := models.UpdateStockPriceDay(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func initStockPriceByDay(code string, count int) error {
+	c := &ctx.Context{}
+	if err := fetcher.GetPrice(c, code, "2020-12-29", fetcher.Day, count); err != nil {
+		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
+		return err
+	}
+	if err := models.InsertStockPriceDay(c); err != nil {
 		return err
 	}
 	return nil
@@ -36,9 +48,9 @@ func InitStockPrice() error {
 	// if err := fetchTradeDateCount("", ""); err != nil {
 	// 	return err
 	// }
-	initStockQueue, err := queue.NewQueue("init", 4, func(data interface{}) error {
+	initStockQueue, err := queue.NewQueue("init", 50, func(data interface{}) error {
 		code := data.(string)
-		if err := GetPricesByDay(code, 1); err != nil {
+		if err := initStockPriceByDay(code, 200); err != nil {
 			return err
 		}
 		return nil

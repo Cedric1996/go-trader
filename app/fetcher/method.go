@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-27 11:07:52
+ * @Last Modified time: 2021-08-04 20:49:24
  */
 
 package fetcher
@@ -51,7 +51,7 @@ func GetSecurityInfo(c *ctx.Context, code string) error {
 }
 
 // 获取指定时间周期的行情
-func GetPrice(c *ctx.Context, code, date string, t TimeScope, count int64) error {
+func GetPrice(c *ctx.Context, code, date string, t TimeScope, count int) error {
 	params := map[string]interface{}{
 		"method":      "get_price",
 		"token":       Token(),

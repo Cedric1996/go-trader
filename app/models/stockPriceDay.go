@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/database"
@@ -22,8 +23,6 @@ func UpdateStockPriceDay(c *ctx.Context) error {
 
 	code := c.Params["code"]
 	opts := options.FindOneAndUpdate().SetUpsert(true)
-	updateCount := 0
-
 	for price := range priceChan {
 		stock := &StockPriceDay{
 			Code:  code.(string),
@@ -35,14 +34,28 @@ func UpdateStockPriceDay(c *ctx.Context) error {
 		if err != nil && err != mongo.ErrNoDocuments {
 			return err
 		}
-		updateCount++
 	}
-
-	// fmt.Printf("updated document %v.\n", updateCount)
 	return nil
 }
 
 func InsertStockPriceDay(c *ctx.Context) error {
+	priceChan := make(chan *Price, 10)
+	c.Params["priceChan"] = priceChan
+	go parsePriceInfo(c)
+
+	code := c.Params["code"]
+	stocks := make([]interface{}, 0)
+	for price := range priceChan {
+		stocks = append(stocks, StockPriceDay{
+			Code:  code.(string),
+			Price: *price,
+		})
+	}
+	res, err := database.Stock().InsertMany(context.TODO(), stocks)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("code: %s, insert %d docs\n", code, len(res.InsertedIDs))
 	return nil
 }
 
