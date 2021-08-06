@@ -16,6 +16,12 @@ type StockPriceDay struct {
 	Code  string `bson:"code, omitempty"`
 }
 
+type SearchPriceOption struct {
+	Code    string
+	BeginAt int64
+	EndAt   int64
+}
+
 func UpdateStockPriceDay(c *ctx.Context) error {
 	priceChan := make(chan *Price, 10)
 	c.Params["priceChan"] = priceChan
@@ -50,6 +56,9 @@ func InsertStockPriceDay(c *ctx.Context) error {
 			Code:  code.(string),
 			Price: *price,
 		})
+	}
+	if len(stocks) == 0 {
+		return nil
 	}
 	res, err := database.Stock().InsertMany(context.TODO(), stocks)
 	if err != nil {
@@ -100,5 +109,38 @@ func GetStockPriceByCode(code string) ([]*StockPriceDay, error) {
 		return nil, err
 	}
 	// Close the cursor once finished
+	return results, nil
+}
+
+func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
+	queryBson := bson.D{}
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}})
+	var results []*StockPriceDay
+
+	if len(opt.Code) > 0 {
+		queryBson = append(queryBson, bson.E{"code", opt.Code})
+	}
+	if opt.EndAt > 0 {
+		// Hour in stock table use 15:00 pm
+		opt.EndAt += 54000
+		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	}
+	cur, err := database.Stock().Find(context.TODO(), queryBson, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for cur.Next(context.TODO()) {
+		var elem StockPriceDay
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
 	return results, nil
 }

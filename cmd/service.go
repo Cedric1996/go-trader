@@ -18,15 +18,9 @@ import (
 
 var (
 	CmdCount = cli.Command{
-		Name:  "count",
-		Usage: "fetch spare query count",
-		Action: func(c *cli.Context) error {
-			app.Init()
-			if err := service.GetQueryCount(); err != nil {
-				return fmt.Errorf("execute fetch all security cmd fail, please check it: %s", err)
-			}
-			return nil
-		},
+		Name:   "count",
+		Usage:  "fetch spare query count",
+		Action: runCount,
 	}
 
 	CmdFetch = cli.Command{
@@ -78,6 +72,14 @@ func runStockPriceInit(c *cli.Context) error {
 	app.Init()
 	if err := service.InitStockPrice(); err != nil {
 		return fmt.Errorf("execute init stock price fail, please check it: %s", err)
+	}
+	return nil
+}
+
+func runCount(c *cli.Context) error {
+	app.Init()
+	if err := service.GetQueryCount(); err != nil {
+		return fmt.Errorf("execute fetch all security cmd fail, please check it: %s", err)
 	}
 	return nil
 }

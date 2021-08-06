@@ -18,6 +18,7 @@ func NewRpcFactor(name string, period int, percent int, calDate string) *rpsFact
 	return &rpsFactor{name: name, period: period, percent: percent, calDate: calDate}
 }
 func (f *rpsFactor) Get() error {
+	// datas, err := models.GetPriceList()
 	return nil
 }
 

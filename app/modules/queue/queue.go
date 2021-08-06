@@ -76,7 +76,7 @@ func (q *ChannelQueue) Close() {
 func (q *ChannelQueue) execute() {
 	for data := range q.dataChan {
 		if err := q.handleFunc(data); err != nil {
-			log.Error("ChannelQueue: %s execute with error: %v", q.name, err)
+			log.Errorf("ChannelQueue: %s execute with error: %v", q.name, err)
 		}
 		q.finishNum++
 	}

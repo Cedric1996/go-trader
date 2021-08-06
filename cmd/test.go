@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"github.cedric1996.com/go-trader/app"
+	"github.cedric1996.com/go-trader/app/service"
 	"github.com/urfave/cli"
 )
 
@@ -43,6 +44,9 @@ var (
 
 func runTest(c *cli.Context) error {
 	app.Init()
+	if err := service.GetStockPriceByCode("000001.XSHE"); err != nil {
+		return err
+	}
 	return nil
 }
 

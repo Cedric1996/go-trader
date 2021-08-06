@@ -17,13 +17,11 @@ import (
 )
 
 type Stock struct {
-	// ID        string  `bson:"_id, omitemptys"`
 	Code        string `bson:"code, omitempty"`
 	DisplayName string `bson:"display_name"`
 	Name        string `bson:"name, omitempty"`
 	StartDate   string `bson:"start_date, omitempty"`
 	EndDate     string `bson:"end_date, omitempty"`
-	// Price     []Price `bson:"price, omitempty"`
 }
 
 func GetAllSecurities() (securities []Stock, err error) {

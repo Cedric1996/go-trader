@@ -30,7 +30,7 @@ func GetPricesByDay(code string, count int) error {
 
 func initStockPriceByDay(code string, count int) error {
 	c := &ctx.Context{}
-	if err := fetcher.GetPrice(c, code, "2020-10-14", fetcher.Day, count); err != nil {
+	if err := fetcher.GetPrice(c, code, "2018-07-09", fetcher.Day, count); err != nil {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 		return err
 	}
@@ -45,9 +45,6 @@ func initStockPriceByDay(code string, count int) error {
  * Stock table
  */
 func InitStockPrice() error {
-	// if err := fetchTradeDateCount("", ""); err != nil {
-	// 	return err
-	// }
 	initStockQueue, err := queue.NewQueue("init", 50, func(data interface{}) error {
 		code := data.(string)
 		if err := initStockPriceByDay(code, 200); err != nil {
@@ -97,7 +94,11 @@ func fetchTradeDateCount(beginDate, endDate string) error {
  *  stock prices
  */
 func GetStockPriceByCode(code string) error {
-	stocks, err := models.GetStockPriceByCode(code)
+	endAt := toTimeStamp("2018-12-04")
+	stocks, err := models.GetStockPriceList(models.SearchPriceOption{
+		Code:  code,
+		EndAt: endAt,
+	})
 	if err != nil {
 		return err
 	}
