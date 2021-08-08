@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:10:50
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-27 23:06:22
+ * @Last Modified time: 2021-08-06 14:12:21
  */
 package database
 
@@ -17,17 +17,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Stock() *mongo.Collection {
-	return mongodb.GetCollectionByName("stock")
-}
-
-func Basic() *mongo.Collection {
-	return mongodb.GetCollectionByName("stock_info")
+func Collection(name string) *mongo.Collection {
+	return mongodb.GetCollectionByName(name)
 }
 
 func InsertOne(data interface{}) error {
 	ctx := context.Background()
-	_, err := Basic().InsertOne(ctx, data)
+	_, err := Collection("stock_info").InsertOne(ctx, data)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -37,7 +33,7 @@ func InsertOne(data interface{}) error {
 
 func InsertMany(data []interface{}) error {
 	ctx := context.Background()
-	_, err := Basic().InsertMany(ctx, data)
+	_, err := Collection("stock_info").InsertMany(ctx, data)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -49,7 +45,7 @@ func Update(filter bson.M, update bson.D) error {
 	opt := &options.UpdateOptions{}
 	opt.SetUpsert(true)
 
-	updateResult, err := Stock().UpdateOne(context.TODO(), filter, update, opt)
+	updateResult, err := Collection("stock").UpdateOne(context.TODO(), filter, update, opt)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -62,7 +58,7 @@ func Update(filter bson.M, update bson.D) error {
 func RemoveStockInfo() error {
 	ctx := context.Background()
 
-	if err := Basic().Drop(ctx); err != nil {
+	if err := Collection("stock_info").Drop(ctx); err != nil {
 		return fmt.Errorf("drop collection: stock info with error %v", err)
 	}
 	return nil

@@ -17,9 +17,10 @@ type StockPriceDay struct {
 }
 
 type SearchPriceOption struct {
-	Code    string
-	BeginAt int64
-	EndAt   int64
+	Code      string
+	BeginAt   int64
+	EndAt     int64
+	Timestamp int64
 }
 
 func UpdateStockPriceDay(c *ctx.Context) error {
@@ -36,7 +37,7 @@ func UpdateStockPriceDay(c *ctx.Context) error {
 		}
 		filter := bson.M{"code": code, "timestamp": price.Timestamp}
 		update := bson.D{{"$set", stock}}
-		err := database.Stock().FindOneAndUpdate(context.TODO(), filter, update, opts).Err()
+		err := database.Collection("stock").FindOneAndUpdate(context.TODO(), filter, update, opts).Err()
 		if err != nil && err != mongo.ErrNoDocuments {
 			return err
 		}
@@ -60,7 +61,7 @@ func InsertStockPriceDay(c *ctx.Context) error {
 	if len(stocks) == 0 {
 		return nil
 	}
-	res, err := database.Stock().InsertMany(context.TODO(), stocks)
+	res, err := database.Collection("stock").InsertMany(context.TODO(), stocks)
 	if err != nil {
 		return err
 	}
@@ -72,44 +73,11 @@ func InitStockTableIndexes() error {
 	indexModel := mongo.IndexModel{
 		Keys: bson.D{{"code", 1}, {"timestamp", -1}},
 	}
-	_, err := database.Stock().Indexes().CreateOne(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection("stock").Indexes().CreateOne(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func GetStockPriceByCode(code string) ([]*StockPriceDay, error) {
-	// Pass these options to the Find method
-	findOptions := options.Find()
-
-	// Here's an array in which you can store the decoded documents
-	var results []*StockPriceDay
-
-	// Passing bson.D{{}} as the filter matches all documents in the collection
-	cur, err := database.Stock().Find(context.TODO(), bson.D{{"code", code}}, findOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	// Finding multiple documents returns a cursor
-	// Iterating through the cursor allows us to decode documents one at a time
-	for cur.Next(context.TODO()) {
-
-		// create a value into which the single document can be decoded
-		var elem StockPriceDay
-		err := cur.Decode(&elem)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, &elem)
-	}
-
-	if err := cur.Err(); err != nil {
-		return nil, err
-	}
-	// Close the cursor once finished
-	return results, nil
 }
 
 func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
@@ -121,11 +89,12 @@ func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
 		queryBson = append(queryBson, bson.E{"code", opt.Code})
 	}
 	if opt.EndAt > 0 {
-		// Hour in stock table use 15:00 pm
-		opt.EndAt += 54000
 		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
 	}
-	cur, err := database.Stock().Find(context.TODO(), queryBson, findOptions)
+	if opt.Timestamp > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
+	}
+	cur, err := database.Collection("stock").Find(context.TODO(), queryBson, findOptions)
 	if err != nil {
 		return nil, err
 	}

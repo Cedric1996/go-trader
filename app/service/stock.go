@@ -14,6 +14,7 @@ import (
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
+	"github.cedric1996.com/go-trader/app/util"
 )
 
 var (
@@ -39,7 +40,7 @@ func Init() {
 
 func GetAllSecurities() error {
 	c := &ctx.Context{}
-	if err := fetcher.GetAllSecurities(c, today()); err != nil {
+	if err := fetcher.GetAllSecurities(c, util.Today()); err != nil {
 		fmt.Printf("error: GetAllSecurities error: %s\n", err)
 		return err
 	}

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-05 14:06:12
+ * @Last Modified time: 2021-08-06 14:55:40
  */
 package service
 
@@ -13,12 +13,13 @@ import (
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
+	"github.cedric1996.com/go-trader/app/util"
 )
 
 // Count should not be greater than 5000.
 func GetPricesByDay(code string, count int) error {
 	c := &ctx.Context{}
-	if err := fetcher.GetPrice(c, code, today(), fetcher.Day, count); err != nil {
+	if err := fetcher.GetPrice(c, code, util.Today(), fetcher.Day, count); err != nil {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 		return err
 	}
@@ -76,10 +77,10 @@ func FetchStockPriceByDay(date string) error {
 func fetchTradeDateCount(beginDate, endDate string) error {
 	c := &ctx.Context{}
 	if len(beginDate) == 0 {
-		beginDate = defaultBeginDate()
+		beginDate = util.DefaultBeginDate()
 	}
 	if len(endDate) == 0 {
-		endDate = today()
+		endDate = util.Today()
 	}
 	if err := fetcher.GetTradeDates(c, beginDate, endDate); err != nil {
 		fmt.Printf("error: GetTradeDates error: %s\n", err)
@@ -94,7 +95,7 @@ func fetchTradeDateCount(beginDate, endDate string) error {
  *  stock prices
  */
 func GetStockPriceByCode(code string) error {
-	endAt := toTimeStamp("2018-12-04")
+	endAt := util.ToTimeStamp("2018-12-04")
 	stocks, err := models.GetStockPriceList(models.SearchPriceOption{
 		Code:  code,
 		EndAt: endAt,

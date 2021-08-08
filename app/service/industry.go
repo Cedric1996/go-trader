@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-25 16:35:21
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 20:35:53
+ * @Last Modified time: 2021-08-06 14:55:12
  */
 package service
 
@@ -12,6 +12,7 @@ import (
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
+	"github.cedric1996.com/go-trader/app/util"
 )
 
 /**
@@ -24,26 +25,26 @@ import (
 func GetModuleList(moduleType, code string) error {
 	c := &ctx.Context{}
 	if moduleType == "industry" {
-	if err := fetcher.GetIndustryList(c, code); err != nil {
-		fmt.Printf("ERROR: GetIndustryList error: %s\n", err)
-		return err
-	}
+		if err := fetcher.GetIndustryList(c, code); err != nil {
+			fmt.Printf("ERROR: GetIndustryList error: %s\n", err)
+			return err
+		}
 	} else {
 		if err := fetcher.GetConcepts(c); err != nil {
 			fmt.Printf("ERROR: GetModules error: %s\n", err)
 			return err
 		}
 	}
-	if err := parseModuleInfo(c);err != nil {
+	if err := parseModuleInfo(c); err != nil {
 		return err
 	}
-	if err := getModulesDetail(c);err!= nil {
+	if err := getModulesDetail(c); err != nil {
 		return err
 	}
 	return nil
 }
 
-func parseModuleInfo(c *ctx.Context)  error {
+func parseModuleInfo(c *ctx.Context) error {
 	resBody := c.ResBody
 	code := c.Params["code"]
 	res := make([]models.Module, 0)
@@ -72,7 +73,7 @@ func getModulesDetail(c *ctx.Context) error {
 	for _, module := range modules {
 		getModuleDetail(&models.ConceptModule{
 			Module: module,
-			Date: today(),
+			Date:   util.Today(),
 		})
 	}
 	return nil

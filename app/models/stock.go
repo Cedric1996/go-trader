@@ -27,7 +27,7 @@ type Stock struct {
 func GetAllSecurities() (securities []Stock, err error) {
 	securities = make([]Stock, 0)
 	ctx := context.Background()
-	cur, err := database.Basic().Find(ctx, bson.D{})
+	cur, err := database.Collection("stock_info").Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
 	}

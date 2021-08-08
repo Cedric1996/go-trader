@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-13 14:51:05
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-04 21:54:50
+ * @Last Modified time: 2021-08-06 15:45:09
  */
 
 package main
@@ -34,22 +34,8 @@ func main() {
 		cmd.CmdFetch,
 		cmd.CmdCount,
 		cmd.CmdSecurity,
-		// cmd.CmdServ,
-		// cmd.CmdHook,
-		// cmd.CmdDump,
-		// cmd.CmdCert,
-		// cmd.CmdAdmin,
-		// cmd.CmdGenerate,
-		// cmd.CmdMigrate,
-		// cmd.CmdKeys,
-		// cmd.CmdConvert,
-		// cmd.CmdDoctor,
-		// cmd.CmdManager,
-		// cmd.Cmdembedded,
-		// cmd.CmdMigrateStorage,
-		// cmd.CmdDocs,
-		// cmd.CmdDumpRepository,
-		// cmd.CmdRestoreRepository,
+		cmd.CmdIndex,
+		cmd.CmdTask,
 	}
 
 	if err := app.Run(os.Args); err != nil {

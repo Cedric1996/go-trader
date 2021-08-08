@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-04 21:54:16
+ * @Last Modified time: 2021-08-06 14:29:56
  */
 package cmd
 
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.cedric1996.com/go-trader/app"
+	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.com/urfave/cli"
 )
@@ -36,7 +37,11 @@ var (
 		Usage:  "fetch all stock securities info and update stock_info table",
 		Action: runFetchAllSecurities,
 	}
-
+	CmdIndex = cli.Command{
+		Name:   "index",
+		Usage:  "init mongodb table indexes",
+		Action: runInitIndex,
+	}
 	subcmdPriceInit = cli.Command{
 		Name:   "init",
 		Usage:  "init stock price and update stock table",
@@ -81,5 +86,16 @@ func runCount(c *cli.Context) error {
 	if err := service.GetQueryCount(); err != nil {
 		return fmt.Errorf("execute fetch all security cmd fail, please check it: %s", err)
 	}
+	return nil
+}
+
+func runInitIndex(c *cli.Context) error {
+	app.Init()
+	if err := models.InitRpsTableIndexes(); err != nil {
+		return err
+	}
+	// if err := models.InitStockTableIndexes(); err != nil {
+	// 	return err
+	// }
 	return nil
 }

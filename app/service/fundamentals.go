@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-03 16:36:43
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-05 14:06:11
+ * @Last Modified time: 2021-08-06 14:55:20
  */
 package service
 
@@ -11,12 +11,13 @@ import (
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
+	"github.cedric1996.com/go-trader/app/util"
 )
 
 func GetFundamentalsData(table fetcher.FinTable, code, date string) error {
 	c := &ctx.Context{}
 	if len(date) == 0 {
-		date = today()
+		date = util.Today()
 	}
 	err := fetcher.GetFundamentals(c, table, code, date, 10)
 	if err != nil {
