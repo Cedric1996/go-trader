@@ -17,7 +17,7 @@ import (
 
 // Price represents basic stock price info.
 type Price struct {
-	Timestamp uint32  `bson:"timestamp, omitempty"`
+	Timestamp int64   `bson:"timestamp, omitempty"`
 	Day       string  `bson:"day, omitempty"`
 	Open      float64 `bson:"open, omitempty"`
 	Close     float64 `bson:"close,omitempty"`
@@ -48,7 +48,7 @@ func parsePriceInfo(c *ctx.Context) {
 		}
 		t, _ := time.Parse(time.RFC3339, val[0]+"T15:00:00Z")
 		price := &Price{}
-		price.Timestamp = uint32(t.Unix())
+		price.Timestamp = t.Unix()
 		price.Day = t.String()
 		price.Open, _ = strconv.ParseFloat(val[1], 10)
 		price.Close, _ = strconv.ParseFloat(val[2], 10)

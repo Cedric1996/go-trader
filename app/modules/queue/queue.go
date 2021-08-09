@@ -11,8 +11,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-
-	"gitea.com/lunny/log"
 )
 
 // Data defines an type of queuable data
@@ -33,6 +31,7 @@ type ChannelQueue struct {
 	name        string
 	workerNum   int
 	dataChan    chan Data
+	finishChan  chan bool
 	workerGroup sync.WaitGroup
 	handleFunc  HandlerFunc
 	finishNum   int
@@ -46,6 +45,7 @@ func NewQueue(name string, workerNum int, handleFunc HandlerFunc) (*ChannelQueue
 		handleFunc: handleFunc,
 		dataChan:   make(chan Data, workerNum),
 	}
+	go queue.Run()
 	return queue, nil
 }
 
@@ -56,27 +56,26 @@ func (q *ChannelQueue) Push(data Data) {
 
 // Run starts to run the queue
 func (q *ChannelQueue) Run() {
-	log.Debug("ChannelUniqueQueue: %s Starting", q.name)
-	go func() {
-		for i := 0; i < q.workerNum; i++ {
-			q.workerGroup.Add(1)
-			go q.execute()
-		}
-		q.workerGroup.Wait()
-	}()
+	fmt.Printf("ChannelQueue: %s Starting", q.name)
+	for i := 0; i < q.workerNum; i++ {
+		q.workerGroup.Add(1)
+		go q.execute()
+	}
+	q.workerGroup.Wait()
 }
 
 // Run starts to run the queue
 func (q *ChannelQueue) Close() {
-	fmt.Printf("ChannelQueue: %s execute %d tasks\n", q.name, q.finishNum)
 	close(q.dataChan)
+	<-q.finishChan
+	fmt.Printf("ChannelQueue: %s execute %d tasks\n", q.name, q.finishNum)
 }
 
 // Execute starts worker to execute task
 func (q *ChannelQueue) execute() {
 	for data := range q.dataChan {
 		if err := q.handleFunc(data); err != nil {
-			log.Errorf("ChannelQueue: %s execute with error: %v", q.name, err)
+			fmt.Errorf("ChannelQueue: %s execute with error: %v", q.name, err)
 		}
 		q.finishNum++
 	}

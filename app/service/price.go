@@ -56,7 +56,6 @@ func InitStockPrice() error {
 	if err != nil {
 		return err
 	}
-	initStockQueue.Run()
 	for i, _ := range SecuritySet {
 		initStockQueue.Push(i)
 	}
@@ -67,15 +66,39 @@ func InitStockPrice() error {
 /**
  * fetch all stockPriceDay with specified day
 s*/
-func FetchStockPriceByDay(date string) error {
+func fetchLatestTradeDay(c *ctx.Context) error {
+	if err := fetchTradeDay(c, "", ""); err != nil {
+		return err
+	}
+	tradeDayMap := make(map[string]interface{})
+	tradeDayToInsert := make([]interface{}, 0)
+	tradeDays, err := models.GetTradeDay(false)
+	if err != nil {
+		return err
+	}
+	for _, day := range tradeDays {
+		tradeDayMap[day.Date] = day
+	}
+	tradeDayRes := c.Params["trade_day"].([]string)
+	for _, day := range tradeDayRes {
+		if _, ok := tradeDayMap[day]; !ok {
+			tradeDayToInsert = append(tradeDayToInsert, &models.TradeDay{
+				Date:      day,
+				Timestamp: util.ToTimeStamp(day),
+				IsInit:    false,
+			})
+		}
+	}
+	if err := models.InsertTradeDay(tradeDayToInsert); err != nil {
+		return fmt.Errorf("update lastest trade day error: %s", err)
+	}
 	return nil
 }
 
 /**
  * fetch trade days between begin/end date
  */
-func fetchTradeDateCount(beginDate, endDate string) error {
-	c := &ctx.Context{}
+func fetchTradeDay(c *ctx.Context, beginDate, endDate string) error {
 	if len(beginDate) == 0 {
 		beginDate = util.DefaultBeginDate()
 	}
@@ -83,10 +106,50 @@ func fetchTradeDateCount(beginDate, endDate string) error {
 		endDate = util.Today()
 	}
 	if err := fetcher.GetTradeDates(c, beginDate, endDate); err != nil {
-		fmt.Printf("error: GetTradeDates error: %s\n", err)
+		fmt.Printf("error: fetch Latest Trade Day error: %s\n", err)
 		return err
 	}
-	DefaultDailyBarCount = len(c.ResBody.GetVals())
+	c.Params["trade_day"] = c.ResBody.GetNoKeyVals()
+	return nil
+}
+
+func FetchStockPriceDayDaily() error {
+	if err := fetchLatestTradeDay(&ctx.Context{}); err != nil {
+		return err
+	}
+
+	tradeDays, err := models.GetTradeDay(true)
+	if err != nil {
+		return err
+	}
+	fetchStockPriceQueue, err := queue.NewQueue("fetch_stock_price", 50, func(data interface{}) error {
+		day := data.(string)
+		if err := fetchStockPriceByDay(day); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, day := range tradeDays {
+		fetchStockPriceQueue.Push(day.Date)
+	}
+	fetchStockPriceQueue.Close()
+	return nil
+}
+
+func fetchStockPriceByDay(day string) error {
+	for code, _ := range SecuritySet {
+		c := &ctx.Context{}
+		if err := fetcher.GetPrice(c, code, day, fetcher.Day, 1); err != nil {
+			fmt.Printf("error: GetPricesByDay error: %s\n", err)
+			return err
+		}
+		if err := models.InsertStockPriceDay(c); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -94,15 +157,17 @@ func fetchTradeDateCount(beginDate, endDate string) error {
  *	find stock price with code from Stock table, return a slice of
  *  stock prices
  */
-func GetStockPriceByCode(code string) error {
-	endAt := util.ToTimeStamp("2018-12-04")
+func GetStockPriceByCode(code string) ([]*models.StockPriceDay, error) {
+	beginAt := util.ToTimeStamp("2021-08-06")
+	endAt := util.ToTimeStamp("2021-08-07")
+
 	stocks, err := models.GetStockPriceList(models.SearchPriceOption{
-		Code:  code,
-		EndAt: endAt,
+		// Code:    code,
+		BeginAt: beginAt,
+		EndAt:   endAt,
 	})
 	if err != nil {
-		return err
+		return stocks, err
 	}
-	fmt.Println(stocks)
-	return nil
+	return stocks, nil
 }

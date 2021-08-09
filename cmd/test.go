@@ -44,7 +44,7 @@ var (
 
 func runTest(c *cli.Context) error {
 	app.Init()
-	if err := service.GetStockPriceByCode("000001.XSHE"); err != nil {
+	if _, err := service.GetStockPriceByCode("000001.XSHE"); err != nil {
 		return err
 	}
 	return nil

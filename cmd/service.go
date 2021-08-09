@@ -8,8 +8,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	"github.cedric1996.com/go-trader/app"
 	"github.cedric1996.com/go-trader/app/models"
@@ -66,8 +64,7 @@ func runFetchAllSecurities(c *cli.Context) error {
 
 func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
-	t := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
-	if err := service.FetchStockPriceByDay(t); err != nil {
+	if err := service.FetchStockPriceDayDaily(); err != nil {
 		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
 	}
 	return nil

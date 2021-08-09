@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"fmt"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/database"
@@ -21,6 +20,7 @@ type SearchPriceOption struct {
 	BeginAt   int64
 	EndAt     int64
 	Timestamp int64
+	Limit     int64
 }
 
 func UpdateStockPriceDay(c *ctx.Context) error {
@@ -61,11 +61,10 @@ func InsertStockPriceDay(c *ctx.Context) error {
 	if len(stocks) == 0 {
 		return nil
 	}
-	res, err := database.Collection("stock").InsertMany(context.TODO(), stocks)
+	_, err := database.Collection("stock").InsertMany(context.TODO(), stocks)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("code: %s, insert %d docs\n", code, len(res.InsertedIDs))
 	return nil
 }
 
@@ -82,7 +81,7 @@ func InitStockTableIndexes() error {
 
 func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
 	queryBson := bson.D{}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}})
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}}).SetLimit(opt.Limit)
 	var results []*StockPriceDay
 
 	if len(opt.Code) > 0 {

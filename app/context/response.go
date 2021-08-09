@@ -28,3 +28,11 @@ func (res *ResponseBody) SetKeys(keys ...string) {
 func (res *ResponseBody) SetVals(vals dataUnit) {
 	res.vals = append(res.vals, vals)
 }
+
+func (res *ResponseBody) GetNoKeyVals() []string {
+	datas := res.keys
+	for _, val := range res.vals {
+		datas = append(datas, val[0])
+	}
+	return datas
+}
