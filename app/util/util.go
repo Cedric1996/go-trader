@@ -31,7 +31,7 @@ func ParseDate(t string) time.Time {
 	year, _ := strconv.Atoi(parts[0])
 	month, _ := strconv.Atoi(parts[1])
 	day, _ := strconv.Atoi(parts[2])
-	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC).Add(time.Hour * 3)
+	return time.Date(year, time.Month(month), day, 15, 0, 0, 0, time.UTC)
 }
 
 func FormatDate(t string) string {

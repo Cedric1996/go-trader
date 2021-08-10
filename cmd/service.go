@@ -88,7 +88,7 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitRpsTableIndexes(); err != nil {
+	if err := models.InitRpsIncreaseTableIndexes(); err != nil {
 		return err
 	}
 	// if err := models.InitStockTableIndexes(); err != nil {

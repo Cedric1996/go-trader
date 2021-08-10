@@ -35,5 +35,8 @@ func runRpsFactor(c *cli.Context) error {
 	if err := rps.Get(); err != nil {
 		return err
 	}
+	if err := rps.Run(); err != nil {
+		return err
+	}
 	return nil
 }

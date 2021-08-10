@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.cedric1996.com/go-trader/app/models"
+	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/util"
 )
 
@@ -20,6 +21,11 @@ type rpsFactor struct {
 	percent  int
 	calDate  string
 	priceMap map[string]rpsPrice
+}
+
+type rpsDatum struct {
+	rpsBase  models.RpsBase
+	rpsPrice rpsPrice
 }
 
 type rpsPrice map[string]float64
@@ -35,14 +41,19 @@ func NewRpsFactor(name string, period int, percent int, calDate string) *rpsFact
 }
 
 func (f *rpsFactor) Get() error {
-	periods := map[string]int64{
-		"period_120": util.ParseDate(f.calDate).AddDate(0, 0, -120).Unix(),
-		"period_20":  util.ParseDate(f.calDate).AddDate(0, 0, -20).Unix(),
-		"period_10":  util.ParseDate(f.calDate).AddDate(0, 0, -10).Unix(),
-		"period_5":   util.ParseDate(f.calDate).AddDate(0, 0, -5).Unix(),
-		"period_0":   util.ParseDate(f.calDate).Unix(),
-	}
+	// p := []int64{5, 10, 20, 120}
+	p := []int64{5}
+	periods := make(map[string]int64)
+	timestamp := util.ParseDate(f.calDate).Unix()
+	periods["period_0"] = timestamp
 
+	for _, val := range p {
+		period, err := models.GetTradeDayByPeriod(val, timestamp)
+		if err != nil {
+			return err
+		}
+		periods[fmt.Sprintf("period_%d", val)] = period
+	}
 	for key, period := range periods {
 		fmt.Printf("begin query period %s raw data\n", key)
 		datas, err := models.GetStockPriceList(models.SearchPriceOption{
@@ -67,6 +78,38 @@ func (f *rpsFactor) Get() error {
 }
 
 func (f *rpsFactor) Run() error {
+	if f.priceMap == nil {
+		return fmt.Errorf("rps factor priceMap is nil, please check")
+	}
+	queue, err := queue.NewQueue("rps_increase", 50, 100, func(data interface{}) (interface{}, error) {
+		datum := data.(rpsDatum)
+		val := datum.rpsPrice
+		return &models.RpsIncrease{
+			RpsBase:      datum.rpsBase,
+			Increase_120: (val["period_0"] - val["period_120"]) / val["period_0"],
+			Increase_20:  (val["period_0"] - val["period_20"]) / val["period_0"],
+			Increase_10:  (val["period_0"] - val["period_10"]) / val["period_0"],
+			Increase_5:   (val["period_0"] - val["period_5"]) / val["period_0"],
+		}, nil
+	}, func(datas []interface{}) error {
+		if err := models.InsertRpsIncrease(datas); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	timestamp := util.ParseDate(f.calDate).Unix()
+	for k, val := range f.priceMap {
+		if val != nil {
+			queue.Push(rpsDatum{
+				rpsBase:  models.RpsBase{Code: k, Timestamp: timestamp, Date: f.calDate},
+				rpsPrice: val,
+			})
+		}
+	}
+	queue.Close()
 	return nil
 }
 

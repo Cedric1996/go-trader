@@ -46,11 +46,13 @@ func initStockPriceByDay(code string, count int) error {
  * Stock table
  */
 func InitStockPrice() error {
-	initStockQueue, err := queue.NewQueue("init", 50, func(data interface{}) error {
+	initStockQueue, err := queue.NewQueue("init", 50, 10, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		if err := initStockPriceByDay(code, 200); err != nil {
-			return err
+			return nil, err
 		}
+		return nil, nil
+	}, func(datas []interface{}) error {
 		return nil
 	})
 	if err != nil {
@@ -122,11 +124,13 @@ func FetchStockPriceDayDaily() error {
 	if err != nil {
 		return err
 	}
-	fetchStockPriceQueue, err := queue.NewQueue("fetch_stock_price", 50, func(data interface{}) error {
+	fetchStockPriceQueue, err := queue.NewQueue("fetch_stock_price", 50, 10, func(data interface{}) (interface{}, error) {
 		day := data.(string)
 		if err := fetchStockPriceByDay(day); err != nil {
-			return err
+			return nil, err
 		}
+		return nil, nil
+	}, func(datas []interface{}) error {
 		return nil
 	})
 	if err != nil {

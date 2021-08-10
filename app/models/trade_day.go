@@ -13,6 +13,7 @@ import (
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -68,5 +69,30 @@ func UpdateTradeDay(days []int64) error {
 		}
 	}
 	fmt.Printf("update trade day count: %d\n", len(days))
+	return nil
+}
+
+func GetTradeDayByPeriod(period int64, timestamp int64) (int64, error) {
+	filter := bson.M{"is_init": true, "timestamp": bson.M{"$lte": timestamp}}
+	findOptions := options.FindOne().SetSkip(period)
+	result := database.Collection("trade_day").FindOne(context.TODO(), filter, findOptions)
+	var tradeDay TradeDay
+	if err := result.Decode(&tradeDay); err != nil {
+		return 0, err
+	}
+	return tradeDay.Timestamp, nil
+}
+
+func InitTradeDayTableIndexes() error {
+	indexModel := make([]mongo.IndexModel, 0)
+	indexModel = append(indexModel, mongo.IndexModel{
+		Keys: bson.D{{"timestamp", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"is_init", -1}},
+	})
+	_, err := database.Collection("trade_day").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }

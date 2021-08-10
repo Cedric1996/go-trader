@@ -16,34 +16,44 @@ import (
 // Data defines an type of queuable data
 type Data interface{}
 
-// HandlerFunc is a function that takes a variable amount of data and processes it
-type HandlerFunc func(interface{}) error
+// ExecuteFunc is a function that takes a variable amount of data and processes it
+type ExecuteFunc func(interface{}) (interface{}, error)
+
+// HandleFunc is a function that store a variable number of data
+type HandleFunc func([]interface{}) error
 
 // Queue defines an interface of a queue-like item
 // Queues will handle their own contents in the Run method
 type TaskQueue interface {
 	Run(atTerminate func(context.Context, func()))
-	Push(Data) error
+	Push([]Data) error
 	Close()
 }
 
 type ChannelQueue struct {
 	name        string
 	workerNum   int
+	batchSize   int
 	dataChan    chan Data
 	finishChan  chan bool
+	resChan     chan interface{}
 	workerGroup sync.WaitGroup
-	handleFunc  HandlerFunc
+	executeFunc ExecuteFunc
+	handleFunc  HandleFunc
 	finishNum   int
 }
 
-// NewQueue takes a queue Type, HandlerFunc, some options and possibly an exemplar and returns a Queue or an error
-func NewQueue(name string, workerNum int, handleFunc HandlerFunc) (*ChannelQueue, error) {
+// NewQueue takes a queue Type, ExecuteFunc, some options and possibly an exemplar and returns a Queue or an error
+func NewQueue(name string, workerNum, batchSize int, executeFunc ExecuteFunc, handleFunc HandleFunc) (*ChannelQueue, error) {
 	queue := &ChannelQueue{
-		name:       name,
-		workerNum:  workerNum,
-		handleFunc: handleFunc,
-		dataChan:   make(chan Data, workerNum),
+		name:        name,
+		workerNum:   workerNum,
+		executeFunc: executeFunc,
+		handleFunc:  handleFunc,
+		batchSize:   batchSize,
+		dataChan:    make(chan Data, workerNum),
+		resChan:     make(chan interface{}, workerNum),
+		finishChan:  make(chan bool),
 	}
 	go queue.Run()
 	return queue, nil
@@ -56,28 +66,64 @@ func (q *ChannelQueue) Push(data Data) {
 
 // Run starts to run the queue
 func (q *ChannelQueue) Run() {
-	fmt.Printf("ChannelQueue: %s Starting", q.name)
+	fmt.Printf("ChannelQueue: %s Starting:\n", q.name)
+	go q.handle()
 	for i := 0; i < q.workerNum; i++ {
 		q.workerGroup.Add(1)
 		go q.execute()
 	}
 	q.workerGroup.Wait()
+	close(q.resChan)
 }
 
 // Run starts to run the queue
 func (q *ChannelQueue) Close() {
 	close(q.dataChan)
-	<-q.finishChan
+	for {
+		finished := <-q.finishChan
+		if finished {
+			break
+		}
+	}
 	fmt.Printf("ChannelQueue: %s execute %d tasks\n", q.name, q.finishNum)
 }
 
 // Execute starts worker to execute task
 func (q *ChannelQueue) execute() {
 	for data := range q.dataChan {
-		if err := q.handleFunc(data); err != nil {
+		res, err := q.executeFunc(data)
+		if err != nil {
 			fmt.Errorf("ChannelQueue: %s execute with error: %v", q.name, err)
 		}
-		q.finishNum++
+		if res != nil {
+			q.resChan <- res
+		}
 	}
 	q.workerGroup.Done()
+}
+
+func (q *ChannelQueue) handle() {
+	count := 0
+	res := []interface{}{}
+	for datum := range q.resChan {
+		res := append(res, datum)
+		count++
+		if count == q.batchSize {
+			if err := q.handleFunc(res); err != nil {
+				return
+			}
+			fmt.Printf("handle %d data in channel queue %s\n", count, q.name)
+			q.finishNum += count
+			res = []interface{}{}
+			count = 0
+		}
+	}
+	if len(res) > 0 {
+		if err := q.handleFunc(res); err != nil {
+			return
+		}
+	}
+	fmt.Printf("handle %d data in channel queue %s, then task will be finished..\n", count, q.name)
+	q.finishNum += count
+	q.finishChan <- true
 }
