@@ -32,16 +32,15 @@ type Price struct {
 	PreClose  float64 `bson:"preClose, omitempty"`
 }
 
-func parsePriceInfo(c *ctx.Context) {
+func ParsePriceInfo(c *ctx.Context) []*Price {
 	resBody := c.ResBody
 	code := c.Params["code"]
-	priceChan := c.Params["priceChan"].(chan *Price)
-	if code == "" || priceChan == nil {
+	if code == "" {
 		fmt.Errorf("Parse price info with error.")
-		return
+		return nil
 	}
 	vals := resBody.GetVals()
-
+	prices := make([]*Price, 0)
 	for _, val := range vals {
 		if len(val) < 12 {
 			continue
@@ -61,7 +60,7 @@ func parsePriceInfo(c *ctx.Context) {
 		price.LowLimit, _ = strconv.ParseFloat(val[9], 10)
 		price.Avg, _ = strconv.ParseFloat(val[10], 10)
 		price.PreClose, _ = strconv.ParseFloat(val[11], 10)
-		priceChan <- price
+		prices = append(prices, price)
 	}
-	close(priceChan)
+	return prices
 }

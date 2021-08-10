@@ -7,6 +7,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.cedric1996.com/go-trader/app"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.com/urfave/cli"
@@ -44,9 +46,33 @@ var (
 
 func runTest(c *cli.Context) error {
 	app.Init()
-	if _, err := service.GetStockPriceByCode("000001.XSHE"); err != nil {
+
+	// if err := models.DeleteStockPriceDayByDay(util.ParseDate("2021-08-09").Unix()); err != nil {
+	// 	return err
+	// }
+	prices, err := service.GetStockPriceByCode("000001.XSHE")
+	if err != nil {
 		return err
 	}
+	fmt.Println(len(prices))
+	// priceMap := make(map[int64]bool)
+	// for _, p := range prices {
+	// 	priceMap[p.Price.Timestamp] = true
+	// }
+	// tradeDays, err := models.GetTradeDay(false, 0, 0)
+	// if err != nil {
+	// 	return err
+	// }
+	// datum := make([]int64, 0)
+	// for _, tradeDay := range tradeDays {
+	// 	_, ok := priceMap[tradeDay.Timestamp]
+	// 	if ok {
+	// 		datum = append(datum, tradeDay.Timestamp)
+	// 	}
+	// }
+	// if err := models.UpdateTradeDay(datum); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 

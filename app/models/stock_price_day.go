@@ -26,7 +26,7 @@ type SearchPriceOption struct {
 func UpdateStockPriceDay(c *ctx.Context) error {
 	priceChan := make(chan *Price, 10)
 	c.Params["priceChan"] = priceChan
-	go parsePriceInfo(c)
+	go ParsePriceInfo(c)
 
 	code := c.Params["code"]
 	opts := options.FindOneAndUpdate().SetUpsert(true)
@@ -45,22 +45,7 @@ func UpdateStockPriceDay(c *ctx.Context) error {
 	return nil
 }
 
-func InsertStockPriceDay(c *ctx.Context) error {
-	priceChan := make(chan *Price, 10)
-	c.Params["priceChan"] = priceChan
-	go parsePriceInfo(c)
-
-	code := c.Params["code"]
-	stocks := make([]interface{}, 0)
-	for price := range priceChan {
-		stocks = append(stocks, StockPriceDay{
-			Code:  code.(string),
-			Price: *price,
-		})
-	}
-	if len(stocks) == 0 {
-		return nil
-	}
+func InsertStockPriceDay(stocks []interface{}) error {
 	_, err := database.Collection("stock").InsertMany(context.TODO(), stocks)
 	if err != nil {
 		return err
@@ -81,7 +66,7 @@ func InitStockTableIndexes() error {
 
 func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
 	queryBson := bson.D{}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}}).SetLimit(opt.Limit)
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", -1}}).SetLimit(opt.Limit)
 	var results []*StockPriceDay
 
 	if len(opt.Code) > 0 {
@@ -111,4 +96,13 @@ func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
 		return nil, err
 	}
 	return results, nil
+}
+
+func DeleteStockPriceDayByDay(timestamp int64) error {
+	filter := bson.M{"timestamp": timestamp}
+	_, err := database.Collection("stock").DeleteMany(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	return nil
 }

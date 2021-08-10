@@ -41,8 +41,7 @@ func NewRpsFactor(name string, period int, percent int, calDate string) *rpsFact
 }
 
 func (f *rpsFactor) Get() error {
-	// p := []int64{5, 10, 20, 120}
-	p := []int64{5}
+	p := []int64{5, 10, 20, 120}
 	periods := make(map[string]int64)
 	timestamp := util.ParseDate(f.calDate).Unix()
 	periods["period_0"] = timestamp
@@ -55,7 +54,6 @@ func (f *rpsFactor) Get() error {
 		periods[fmt.Sprintf("period_%d", val)] = period
 	}
 	for key, period := range periods {
-		fmt.Printf("begin query period %s raw data\n", key)
 		datas, err := models.GetStockPriceList(models.SearchPriceOption{
 			Timestamp: period,
 		})
@@ -72,8 +70,8 @@ func (f *rpsFactor) Get() error {
 				rps[key] = datum.Close
 			}
 		}
-		fmt.Printf("end query period %s raw data\n", key)
 	}
+	fmt.Printf("end query period raw data\n")
 	return nil
 }
 

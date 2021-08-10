@@ -16,6 +16,11 @@ import (
 	"github.cedric1996.com/go-trader/app/util"
 )
 
+type fetchStockDailyDatum struct {
+	code     string
+	tradeDay *models.TradeDay
+}
+
 // Count should not be greater than 5000.
 func GetPricesByDay(code string, count int) error {
 	c := &ctx.Context{}
@@ -35,9 +40,9 @@ func initStockPriceByDay(code string, count int) error {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 		return err
 	}
-	if err := models.InsertStockPriceDay(c); err != nil {
-		return err
-	}
+	// if err := models.InsertStockPriceDay(c); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -74,7 +79,7 @@ func fetchLatestTradeDay(c *ctx.Context) error {
 	}
 	tradeDayMap := make(map[string]interface{})
 	tradeDayToInsert := make([]interface{}, 0)
-	tradeDays, err := models.GetTradeDay(false)
+	tradeDays, err := models.GetTradeDay(true, 0, 0)
 	if err != nil {
 		return err
 	}
@@ -120,40 +125,45 @@ func FetchStockPriceDayDaily() error {
 		return err
 	}
 
-	tradeDays, err := models.GetTradeDay(true)
+	tradeDays, err := models.GetTradeDay(false, 0, 0)
 	if err != nil {
 		return err
 	}
-	fetchStockPriceQueue, err := queue.NewQueue("fetch_stock_price", 50, 10, func(data interface{}) (interface{}, error) {
-		day := data.(string)
-		if err := fetchStockPriceByDay(day); err != nil {
+	queue, err := queue.NewQueue("fetch_stock_daily", 50, 200, func(data interface{}) (interface{}, error) {
+		c := &ctx.Context{}
+		datum := data.(fetchStockDailyDatum)
+		day := datum.tradeDay
+		if err := fetcher.GetPrice(c, datum.code, day.Date, fetcher.Day, 1); err != nil {
+			fmt.Printf("error: GetPricesByDay error: %s\n", err)
 			return nil, err
+		}
+		if prices := models.ParsePriceInfo(c); prices != nil {
+			if len(prices) > 0 && prices[0].Timestamp == day.Timestamp {
+				return models.StockPriceDay{
+					Code:  datum.code,
+					Price: *prices[0],
+				}, nil
+			}
 		}
 		return nil, nil
 	}, func(datas []interface{}) error {
+		if err := models.InsertStockPriceDay(datas); err != nil {
+			return err
+		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
 	for _, day := range tradeDays {
-		fetchStockPriceQueue.Push(day.Date)
-	}
-	fetchStockPriceQueue.Close()
-	return nil
-}
-
-func fetchStockPriceByDay(day string) error {
-	for code, _ := range SecuritySet {
-		c := &ctx.Context{}
-		if err := fetcher.GetPrice(c, code, day, fetcher.Day, 1); err != nil {
-			fmt.Printf("error: GetPricesByDay error: %s\n", err)
-			return err
+		for code, _ := range SecuritySet {
+			queue.Push(fetchStockDailyDatum{
+				code:     code,
+				tradeDay: day,
+			})
 		}
-		if err := models.InsertStockPriceDay(c); err != nil {
+		if err := models.UpdateTradeDay([]int64{day.Timestamp}); err != nil {
 			return err
 		}
 	}
+	queue.Close()
 	return nil
 }
 
@@ -162,13 +172,10 @@ func fetchStockPriceByDay(day string) error {
  *  stock prices
  */
 func GetStockPriceByCode(code string) ([]*models.StockPriceDay, error) {
-	beginAt := util.ToTimeStamp("2021-08-06")
-	endAt := util.ToTimeStamp("2021-08-07")
-
 	stocks, err := models.GetStockPriceList(models.SearchPriceOption{
 		// Code:    code,
-		BeginAt: beginAt,
-		EndAt:   endAt,
+		BeginAt: util.ToTimeStamp("2021-08-09"),
+		EndAt:   util.ToTimeStamp("2021-08-09"),
 	})
 	if err != nil {
 		return stocks, err

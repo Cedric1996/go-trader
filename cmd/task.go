@@ -10,6 +10,8 @@ package cmd
 import (
 	"github.cedric1996.com/go-trader/app"
 	"github.cedric1996.com/go-trader/app/factor"
+	"github.cedric1996.com/go-trader/app/models"
+	"github.cedric1996.com/go-trader/app/util"
 	"github.com/urfave/cli"
 )
 
@@ -31,12 +33,19 @@ var (
 
 func runRpsFactor(c *cli.Context) error {
 	app.Init()
-	rps := factor.NewRpsFactor("rps", 120, 85, "2021-08-05")
-	if err := rps.Get(); err != nil {
+	t := util.ParseDate("2021-08-06").Unix()
+	tradeDays, err := models.GetTradeDay(false, 100, t)
+	if err != nil {
 		return err
 	}
-	if err := rps.Run(); err != nil {
-		return err
+	for _, day := range tradeDays {
+		rps := factor.NewRpsFactor("rps", 120, 85, day.Date)
+		if err := rps.Get(); err != nil {
+			return err
+		}
+		if err := rps.Run(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

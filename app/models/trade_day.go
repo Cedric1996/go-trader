@@ -32,15 +32,14 @@ func InsertTradeDay(days []interface{}) error {
 	return nil
 }
 
-func GetTradeDay(isInit bool) ([]*TradeDay, error) {
-	queryBson := bson.D{}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}})
+func GetTradeDay(isInit bool, limit, timestamp int64) ([]*TradeDay, error) {
+	filter := bson.M{"is_init": isInit}
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", -1}}).SetLimit(limit)
 	results := make([]*TradeDay, 0)
-	if isInit {
-		queryBson = append(queryBson, bson.E{"is_init", false})
-
+	if timestamp > 0 {
+		filter["timestamp"] = bson.M{"$lte": timestamp}
 	}
-	cur, err := database.Collection("trade_day").Find(context.TODO(), queryBson, findOptions)
+	cur, err := database.Collection("trade_day").Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		return results, err
 	}

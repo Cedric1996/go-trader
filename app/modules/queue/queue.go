@@ -104,9 +104,9 @@ func (q *ChannelQueue) execute() {
 
 func (q *ChannelQueue) handle() {
 	count := 0
-	res := []interface{}{}
+	res := make([]interface{}, q.batchSize)
 	for datum := range q.resChan {
-		res := append(res, datum)
+		res[count] = datum
 		count++
 		if count == q.batchSize {
 			if err := q.handleFunc(res); err != nil {
@@ -114,13 +114,16 @@ func (q *ChannelQueue) handle() {
 			}
 			fmt.Printf("handle %d data in channel queue %s\n", count, q.name)
 			q.finishNum += count
-			res = []interface{}{}
+			res = make([]interface{}, q.batchSize)
 			count = 0
 		}
 	}
-	if len(res) > 0 {
-		if err := q.handleFunc(res); err != nil {
-			return
+	if count > 0 {
+		res = res[:count]
+		if len(res) > 0 {
+			if err := q.handleFunc(res); err != nil {
+				fmt.Printf("error: handle data in channel queue %s\n", q.name)
+			}
 		}
 	}
 	fmt.Printf("handle %d data in channel queue %s, then task will be finished..\n", count, q.name)
