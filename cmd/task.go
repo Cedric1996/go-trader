@@ -88,13 +88,17 @@ func runGetRps(c *cli.Context) error {
 	// if err := models.DeleteRpsIncrease(util.ParseDate("2021-06-14").Unix()); err != nil {
 	// 	return err
 	// }
-	results, err := models.GetRpsIncrease(models.RpsOption{
-		Code: "601952.XSHG",
-		// Timestamp: t,
-	})
-	if err != nil {
+	rps := factor.NewRpsFactor("rps", 120, 85, "2021-08-09")
+	if err := rps.Calculate(); err != nil {
 		return err
 	}
-	fmt.Println(len(results))
+	// results, err := models.GetRpsIncrease(models.RpsOption{
+	// 	Code: "601952.XSHG",
+	// 	// Timestamp: t,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
+	// fmt.Println(len(results))
 	return nil
 }

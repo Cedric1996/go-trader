@@ -14,16 +14,16 @@ import (
 
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
+	"github.cedric1996.com/go-trader/app/service"
 	"github.cedric1996.com/go-trader/app/util"
 )
 
 type rpsFactor struct {
-	name          string
-	period        int
-	percent       int
-	calDate       string
-	priceMap      map[string]rpsPrice
-	priceMapMutex sync.RWMutex
+	name     string
+	period   int
+	percent  int
+	calDate  string
+	priceMap map[string]rpsPrice
 }
 
 type rpsDatum struct {
@@ -40,12 +40,11 @@ type closePriceDatum struct {
 
 func NewRpsFactor(name string, period int, percent int, calDate string) *rpsFactor {
 	return &rpsFactor{
-		name:          name,
-		period:        period,
-		percent:       percent,
-		calDate:       calDate,
-		priceMap:      make(map[string]rpsPrice),
-		priceMapMutex: sync.RWMutex{},
+		name:     name,
+		period:   period,
+		percent:  percent,
+		calDate:  calDate,
+		priceMap: make(map[string]rpsPrice),
 	}
 }
 
@@ -65,6 +64,7 @@ func (f *rpsFactor) Get() error {
 		periods[fmt.Sprintf("period_%d", val)] = timestamps[val]
 	}
 
+	priceMapMutex := sync.RWMutex{}
 	periodSync := sync.WaitGroup{}
 	closePriceChan := make(chan closePriceDatum, 10)
 	for key, period := range periods {
@@ -77,13 +77,13 @@ func (f *rpsFactor) Get() error {
 				return err
 			}
 			for _, datum := range datas {
-				f.priceMapMutex.RLock()
+				priceMapMutex.RLock()
 				_, ok := f.priceMap[datum.Code]
-				f.priceMapMutex.RUnlock()
+				priceMapMutex.RUnlock()
 				if !ok {
-					f.priceMapMutex.Lock()
+					priceMapMutex.Lock()
 					f.priceMap[datum.Code] = rpsPrice{key: datum.Close}
-					f.priceMapMutex.Unlock()
+					priceMapMutex.Unlock()
 				} else {
 					closePriceChan <- closePriceDatum{
 						code:   datum.Code,
@@ -98,9 +98,9 @@ func (f *rpsFactor) Get() error {
 	}
 	go func() {
 		for datum := range closePriceChan {
-			f.priceMapMutex.RLock()
+			priceMapMutex.RLock()
 			f.priceMap[datum.code][datum.period] = datum.price
-			f.priceMapMutex.RUnlock()
+			priceMapMutex.RUnlock()
 		}
 	}()
 	periodSync.Wait()
@@ -143,7 +143,7 @@ func (f *rpsFactor) Run() error {
 		}
 		return rpsIncrease, nil
 	}, func(datas []interface{}) error {
-		if err := models.InsertRpsIncrease(datas); err != nil {
+		if err := models.InsertRps(datas, "rps_increase"); err != nil {
 			return err
 		}
 		return nil
@@ -167,6 +167,58 @@ func (f *rpsFactor) Run() error {
 /**
  * Rps can be specified by period and trade_date
  */
-func calculate() error {
+func (f *rpsFactor) Calculate() error {
+	p := []int64{5, 10, 20, 120}
+	timestamp := util.ParseDate(f.calDate).Unix()
+	rpsMap := make(map[string]*models.Rps)
+	for code, _ := range service.SecuritySet {
+		rpsMap[code] = &models.Rps{
+			RpsBase: models.RpsBase{Code: code, Date: f.calDate, Timestamp: timestamp},
+		}
+	}
+	rpsMapMutex := sync.RWMutex{}
+	rpsSync := sync.WaitGroup{}
+	for _, val := range p {
+		rpsSync.Add(1)
+		go func(val int64) error {
+			rpsIncreaseDatas, err := models.GetRpsIncrease(models.RpsOption{
+				Timestamp: timestamp,
+				SortBy:    fmt.Sprintf("increase_%d", val),
+			})
+			if err != nil {
+				return err
+			}
+			total := len(rpsIncreaseDatas)
+			end := total * 16 / 100
+			for i := 0; i < end; i++ {
+				datum := rpsIncreaseDatas[i]
+				rpsMapMutex.Lock()
+				rps := rpsMap[datum.RpsBase.Code]
+				switch val {
+				case 5:
+					rps.Rps_5 = int64((total - i) * 100 / total)
+				case 10:
+					rps.Rps_10 = int64((total - i) * 100 / total)
+				case 20:
+					rps.Rps_20 = int64((total - i) * 100 / total)
+				case 120:
+					rps.Rps_20 = int64((total - i) * 100 / total)
+				}
+				rpsMapMutex.Unlock()
+			}
+			rpsSync.Done()
+			return nil
+		}(val)
+	}
+	rpsSync.Wait()
+	rpsToInsert := make([]interface{}, 0)
+	for _, val := range rpsMap {
+		if val.Rps_120 != 0 || val.Rps_20 != 0 || val.Rps_10 != 0 || val.Rps_5 != 0 {
+			rpsToInsert = append(rpsToInsert, val)
+		}
+	}
+	if err := models.InsertRps(rpsToInsert, "rps"); err != nil {
+		return err
+	}
 	return nil
 }

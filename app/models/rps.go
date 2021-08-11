@@ -25,10 +25,10 @@ type RpsBase struct {
 
 type Rps struct {
 	RpsBase RpsBase `bson:",inline"`
-	Rps_120 float64 `bson:"rps_120, omitempty"`
-	Rps_20  float64 `bson:"rps_20, omitempty"`
-	Rps_10  float64 `bson:"rps_10, omitempty"`
-	Rps_5   float64 `bson:"rps_5, omitempty"`
+	Rps_120 int64   `bson:"rps_120, omitempty"`
+	Rps_20  int64   `bson:"rps_20, omitempty"`
+	Rps_10  int64   `bson:"rps_10, omitempty"`
+	Rps_5   int64   `bson:"rps_5, omitempty"`
 }
 
 type RpsIncrease struct {
@@ -42,6 +42,7 @@ type RpsIncrease struct {
 type RpsOption struct {
 	Code      string
 	Timestamp int64
+	SortBy    string
 }
 
 func InitRpsTableIndexes() error {
@@ -84,9 +85,9 @@ func InitRpsIncreaseTableIndexes() error {
 	return nil
 }
 
-func InsertRpsIncrease(datas []interface{}) error {
+func InsertRps(datas []interface{}, name string) error {
 	opts := options.InsertMany()
-	_, err := database.Collection("rps_increase").InsertMany(context.TODO(), datas, opts)
+	_, err := database.Collection(name).InsertMany(context.TODO(), datas, opts)
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,9 @@ func GetRpsIncrease(opt RpsOption) ([]*RpsIncrease, error) {
 	queryBson := bson.D{}
 	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}})
 	var results []*RpsIncrease
-
+	if len(opt.SortBy) > 0 {
+		findOptions.SetSort(bson.D{{opt.SortBy, -1}})
+	}
 	if len(opt.Code) > 0 {
 		queryBson = append(queryBson, bson.E{"code", opt.Code})
 	}
