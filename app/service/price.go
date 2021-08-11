@@ -173,9 +173,9 @@ func FetchStockPriceDayDaily() error {
  */
 func GetStockPriceByCode(code string) ([]*models.StockPriceDay, error) {
 	stocks, err := models.GetStockPriceList(models.SearchPriceOption{
-		// Code:    code,
-		BeginAt: util.ToTimeStamp("2021-08-09"),
-		EndAt:   util.ToTimeStamp("2021-08-09"),
+		Code:    code,
+		BeginAt: util.ToTimeStamp("2021-05-01"),
+		EndAt:   util.ToTimeStamp("2021-05-12"),
 	})
 	if err != nil {
 		return stocks, err

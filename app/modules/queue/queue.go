@@ -112,7 +112,6 @@ func (q *ChannelQueue) handle() {
 			if err := q.handleFunc(res); err != nil {
 				return
 			}
-			fmt.Printf("handle %d data in channel queue %s\n", count, q.name)
 			q.finishNum += count
 			res = make([]interface{}, q.batchSize)
 			count = 0

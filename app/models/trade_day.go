@@ -71,15 +71,29 @@ func UpdateTradeDay(days []int64) error {
 	return nil
 }
 
-func GetTradeDayByPeriod(period int64, timestamp int64) (int64, error) {
+func GetTradeDayByPeriod(limit int64, timestamp int64) ([]int64, error) {
 	filter := bson.M{"is_init": true, "timestamp": bson.M{"$lte": timestamp}}
-	findOptions := options.FindOne().SetSkip(period)
-	result := database.Collection("trade_day").FindOne(context.TODO(), filter, findOptions)
-	var tradeDay TradeDay
-	if err := result.Decode(&tradeDay); err != nil {
-		return 0, err
+	findOptions := options.Find().SetLimit(limit).SetSort(bson.D{{"timestamp", -1}})
+	results := make([]int64, 0)
+
+	cur, err := database.Collection("trade_day").Find(context.TODO(), filter, findOptions)
+	if err != nil {
+		return results, err
 	}
-	return tradeDay.Timestamp, nil
+
+	for cur.Next(context.TODO()) {
+		var elem TradeDay
+		err := cur.Decode(&elem)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, elem.Timestamp)
+	}
+
+	if err := cur.Err(); err != nil {
+		return results, err
+	}
+	return results, nil
 }
 
 func InitTradeDayTableIndexes() error {

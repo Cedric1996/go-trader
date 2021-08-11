@@ -50,11 +50,11 @@ func runTest(c *cli.Context) error {
 	// if err := models.DeleteStockPriceDayByDay(util.ParseDate("2021-08-09").Unix()); err != nil {
 	// 	return err
 	// }
-	prices, err := service.GetStockPriceByCode("000001.XSHE")
+	prices, err := service.GetStockPriceByCode("601952.XSHG")
 	if err != nil {
 		return err
 	}
-	fmt.Println(len(prices))
+	fmt.Println(prices)
 	// priceMap := make(map[int64]bool)
 	// for _, p := range prices {
 	// 	priceMap[p.Price.Timestamp] = true

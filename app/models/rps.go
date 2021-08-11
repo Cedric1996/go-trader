@@ -9,6 +9,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
@@ -36,6 +37,11 @@ type RpsIncrease struct {
 	Increase_20  float64 `bson:"increase_20, omitempty"`
 	Increase_10  float64 `bson:"increase_10, omitempty"`
 	Increase_5   float64 `bson:"increase_5, omitempty"`
+}
+
+type RpsOption struct {
+	Code      string
+	Timestamp int64
 }
 
 func InitRpsTableIndexes() error {
@@ -84,5 +90,46 @@ func InsertRpsIncrease(datas []interface{}) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func GetRpsIncrease(opt RpsOption) ([]*RpsIncrease, error) {
+	queryBson := bson.D{}
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}})
+	var results []*RpsIncrease
+
+	if len(opt.Code) > 0 {
+		queryBson = append(queryBson, bson.E{"code", opt.Code})
+	}
+	if opt.Timestamp > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
+	}
+	cur, err := database.Collection("rps_increase").Find(context.TODO(), queryBson, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for cur.Next(context.TODO()) {
+		var elem RpsIncrease
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func DeleteRpsIncrease(timestamp int64) error {
+	filter := bson.M{"timestamp": timestamp}
+	results, err := database.Collection("rps_increase").DeleteMany(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("delete rps_increase data count: %d\n", results.DeletedCount)
 	return nil
 }

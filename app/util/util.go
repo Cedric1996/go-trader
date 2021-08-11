@@ -37,3 +37,8 @@ func ParseDate(t string) time.Time {
 func FormatDate(t string) string {
 	return strings.Split(t, "T")[0]
 }
+
+func ToDate(timestamp int64) string {
+	tm := time.Unix(timestamp, 0)
+	return tm.Format(time.RFC3339)
+}
