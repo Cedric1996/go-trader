@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-26 20:33:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 17:32:09
+ * @Last Modified time: 2021-08-12 23:32:28
  */
 
 package util
@@ -16,6 +16,10 @@ import (
 func Today() string {
 	t := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
 	return t
+}
+
+func TodayUnix() int64 {
+	return ParseDate(Today()).Unix()
 }
 
 func DefaultBeginDate() string {

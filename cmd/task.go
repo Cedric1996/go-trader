@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 22:26:03
+ * @Last Modified time: 2021-08-13 00:00:54
  */
 
 package cmd
@@ -15,6 +15,7 @@ import (
 	"github.cedric1996.com/go-trader/app/factor"
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
+	"github.cedric1996.com/go-trader/app/service"
 	"github.cedric1996.com/go-trader/app/util"
 	"github.com/urfave/cli"
 )
@@ -27,6 +28,7 @@ var (
 			subCmdTaskRps,
 			subCmdTaskGetRps,
 			subCmdTaskHighest,
+			subCmdTaskVerifyRefDate,
 		},
 	}
 
@@ -79,32 +81,6 @@ func runRpsFactor(c *cli.Context) error {
 		return err
 	}
 	return nil
-	// startT := time.Now()
-
-	// dateChan := make(chan string, 20)
-	// task := sync.WaitGroup{}
-	// for i := 0; i < 20; i++ {
-	// 	task.Add(1)
-	// 	go func() error {
-	// 		for date := range dateChan {
-	// 			rps := factor.NewRpsFactor("rps", 120, 85, date)
-	// 			if err := rps.Run(); err != nil {
-	// 				return err
-	// 			}
-	// 			fmt.Printf("rps task has been done, date: %s\n", date)
-	// 		}
-	// 		task.Done()
-	// 		return nil
-	// 	}()
-	// }
-
-	// for _, day := range tradeDays {
-	// 	dateChan <- day.Date
-	// }
-	// close(dateChan)
-	// task.Wait()
-	// fmt.Printf("task rps finished successfully, total time: %s", time.Since(startT).String())
-	// return nil
 }
 
 func runGetRps(c *cli.Context) error {
@@ -153,11 +129,19 @@ func runHighestFactor(c *cli.Context) error {
 
 func runVerifyRefDate(c *cli.Context) error {
 	app.Init()
-	// t := util.Today()
-	// stocks, err := models.GetAllSecurities()
-	// if err != nil {
-	// 	return nil
-	// }
-
+	taskQueue := queue.NewTaskQueue("verify_ref_date", 50, func(data interface{}) error {
+		code := data.(string)
+		if err := service.VerifyRefDate(code); err != nil {
+			return err
+		}
+		return nil
+	}, func(dateChan *chan interface{}) {
+		for code, _ := range service.SecuritySet {
+			*dateChan <- code
+		}
+	})
+	if err := taskQueue.Run(); err != nil {
+		return err
+	}
 	return nil
 }

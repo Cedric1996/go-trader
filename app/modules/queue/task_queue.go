@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 18:08:17
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 18:35:25
+ * @Last Modified time: 2021-08-12 23:59:46
  */
 
 package queue
@@ -38,7 +38,9 @@ func (q *TaskQueue) Run() error {
 		q.taskSync.Add(1)
 		go func() {
 			for data := range q.dataChan {
-				q.handleFunc(data)
+				if err := q.handleFunc(data); err != nil {
+					break
+				}
 			}
 			q.taskSync.Done()
 		}()

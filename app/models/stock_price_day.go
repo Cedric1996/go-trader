@@ -21,6 +21,7 @@ type SearchPriceOption struct {
 	EndAt     int64
 	Timestamp int64
 	Limit     int64
+	Reversed  bool
 }
 
 func UpdateStockPriceDay(c *ctx.Context) error {
@@ -66,7 +67,11 @@ func InitStockTableIndexes() error {
 
 func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
 	queryBson := bson.D{}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", -1}}).SetLimit(opt.Limit)
+	sortBy := -1
+	if opt.Reversed {
+		sortBy = 1
+	}
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit)
 	var results []*StockPriceDay
 
 	if len(opt.Code) > 0 {
@@ -100,6 +105,15 @@ func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
 
 func DeleteStockPriceDayByDay(timestamp int64) error {
 	filter := bson.M{"timestamp": timestamp}
+	_, err := database.Collection("stock").DeleteMany(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteStockPriceDayByCode(code string) error {
+	filter := bson.M{"code": code}
 	_, err := database.Collection("stock").DeleteMany(context.TODO(), filter)
 	if err != nil {
 		return err

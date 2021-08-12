@@ -2,12 +2,13 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-06 14:55:40
+ * @Last Modified time: 2021-08-12 23:58:18
  */
 package service
 
 import (
 	"fmt"
+	"strings"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
@@ -22,16 +23,14 @@ type fetchStockDailyDatum struct {
 }
 
 // Count should not be greater than 5000.
-func GetPricesByDay(code string, count int) error {
+func GetPricesByDay(code, date string, count int) ([]*models.Price, error) {
 	c := &ctx.Context{}
-	if err := fetcher.GetPrice(c, code, util.Today(), fetcher.Day, count); err != nil {
+	if err := fetcher.GetPrice(c, code, date, fetcher.Day, count); err != nil {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
-		return err
+		return nil, err
 	}
-	if err := models.UpdateStockPriceDay(c); err != nil {
-		return err
-	}
-	return nil
+	prices := models.ParsePriceInfo(c)
+	return prices, nil
 }
 
 func initStockPriceByDay(code string, count int) error {
@@ -186,4 +185,63 @@ func GetStockPriceByCode(code string) ([]*models.StockPriceDay, error) {
 		return stocks, err
 	}
 	return stocks, nil
+}
+
+/**
+ * verify ref date check stock price is ref correctly
+ */
+func VerifyRefDate(code string) error {
+	vals, err := models.GetStockPriceList(models.SearchPriceOption{
+		Reversed: true,
+		Limit:    1,
+		Code:     code,
+	})
+	if err != nil {
+		return err
+	}
+	if len(vals) == 0 {
+		return updateStockPriceDayByCode(code)
+	}
+	price := vals[0]
+	date := strings.Split(util.ToDate(price.Timestamp), "T")[0]
+	prices, err := GetPricesByDay(code, date, 1)
+	if err != nil {
+		return err
+	}
+	if len(prices) == 0 {
+		return fmt.Errorf("error: fetch price day fail %s, %s", code, date)
+	}
+	if prices[0].Open != price.Open || prices[0].Close != price.Close || prices[0].High != price.High || prices[0].Low != price.Low {
+		return updateStockPriceDayByCode(code)
+	}
+	return nil
+}
+
+func updateStockPriceDayByCode(code string) error {
+	if err := models.DeleteStockPriceDayByCode(code); err != nil {
+		return err
+	}
+	tradeDays, err := models.GetTradeDay(true, 0, util.TodayUnix())
+	if err != nil {
+		return err
+	}
+	if len(tradeDays) == 0 {
+		return fmt.Errorf("error: get trade days")
+	}
+	stocks, err := GetPricesByDay(code, tradeDays[0].Date, len(tradeDays))
+	if err != nil {
+		return err
+	}
+	datas := make([]interface{}, 0)
+	for _, datum := range stocks {
+		datas = append(datas, models.StockPriceDay{
+			Code:  code,
+			Price: *datum,
+		})
+	}
+	if err := models.InsertStockPriceDay(datas); err != nil {
+		return err
+	}
+	fmt.Printf("verify ref date update: code %s\n", code)
+	return nil
 }
