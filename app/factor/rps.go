@@ -48,7 +48,20 @@ func NewRpsFactor(name string, period int, percent int, calDate string) *rpsFact
 	}
 }
 
-func (f *rpsFactor) Get() error {
+func (r *rpsFactor) Run() error {
+	if err := r.get(); err != nil {
+		return err
+	}
+	if err := r.run(); err != nil {
+		return err
+	}
+	if err := r.calculate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *rpsFactor) get() error {
 	var max int64
 	max = 120
 	p := []int64{5, 10, 20, max}
@@ -108,7 +121,7 @@ func (f *rpsFactor) Get() error {
 	return nil
 }
 
-func (f *rpsFactor) Run() error {
+func (f *rpsFactor) run() error {
 	if f.priceMap == nil {
 		return fmt.Errorf("rps factor priceMap is nil, please check")
 	}
@@ -167,7 +180,7 @@ func (f *rpsFactor) Run() error {
 /**
  * Rps can be specified by period and trade_date
  */
-func (f *rpsFactor) Calculate() error {
+func (f *rpsFactor) calculate() error {
 	p := []int64{5, 10, 20, 120}
 	timestamp := util.ParseDate(f.calDate).Unix()
 	rpsMap := make(map[string]*models.Rps)

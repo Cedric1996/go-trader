@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-06 14:29:56
+ * @Last Modified time: 2021-08-12 17:23:35
  */
 package cmd
 
@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.cedric1996.com/go-trader/app"
+	"github.cedric1996.com/go-trader/app/factor"
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.com/urfave/cli"
@@ -64,8 +65,15 @@ func runFetchAllSecurities(c *cli.Context) error {
 
 func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
-	if err := service.FetchStockPriceDayDaily(); err != nil {
+	dates, err := service.FetchStockPriceDayDaily()
+	if err != nil {
 		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
+	}
+	for _, day := range dates {
+		rps := factor.NewRpsFactor("rps", 120, 85, day)
+		if err := rps.Run(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -88,11 +96,11 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitRpsTableIndexes(); err != nil {
+	if err := models.InitHighestTableIndexes(); err != nil {
 		return err
 	}
-	// if err := models.InitStockTableIndexes(); err != nil {
-	// 	return err
-	// }
+	if err := models.InitStockTableIndexes(); err != nil {
+		return err
+	}
 	return nil
 }

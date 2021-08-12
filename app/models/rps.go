@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 13:51:37
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-06 14:29:23
+ * @Last Modified time: 2021-08-12 16:57:07
  */
 
 package models
@@ -13,14 +13,16 @@ import (
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RpsBase struct {
-	Code      string `bson:"code, omitempty"`
-	Timestamp int64  `bson:"timestamp, omitempty"`
-	Date      string `bson:"date, omitempty"`
+	ID        primitive.ObjectID `bson:"_id, omitempty"`
+	Code      string             `bson:"code, omitempty"`
+	Timestamp int64              `bson:"timestamp, omitempty"`
+	Date      string             `bson:"date, omitempty"`
 }
 
 type Rps struct {

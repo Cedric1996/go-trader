@@ -7,9 +7,6 @@
 
 package factor
 
-import ctx "github.cedric1996.com/go-trader/app/context"
-
 type Factor interface {
-	Get(ctx.Context) error
 	Run() error
 }

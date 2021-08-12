@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-04 15:11:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-04 20:28:27
+ * @Last Modified time: 2021-08-12 18:07:47
  */
 
 package queue
@@ -24,7 +24,7 @@ type HandleFunc func([]interface{}) error
 
 // Queue defines an interface of a queue-like item
 // Queues will handle their own contents in the Run method
-type TaskQueue interface {
+type Queue interface {
 	Run(atTerminate func(context.Context, func()))
 	Push([]Data) error
 	Close()

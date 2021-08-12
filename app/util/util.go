@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-26 20:33:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-06 15:01:37
+ * @Last Modified time: 2021-08-12 17:32:09
  */
 
 package util
@@ -32,10 +32,6 @@ func ParseDate(t string) time.Time {
 	month, _ := strconv.Atoi(parts[1])
 	day, _ := strconv.Atoi(parts[2])
 	return time.Date(year, time.Month(month), day, 15, 0, 0, 0, time.UTC)
-}
-
-func FormatDate(t string) string {
-	return strings.Split(t, "T")[0]
 }
 
 func ToDate(timestamp int64) string {

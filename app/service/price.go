@@ -120,14 +120,15 @@ func fetchTradeDay(c *ctx.Context, beginDate, endDate string) error {
 	return nil
 }
 
-func FetchStockPriceDayDaily() error {
+func FetchStockPriceDayDaily() ([]string, error) {
 	if err := fetchLatestTradeDay(&ctx.Context{}); err != nil {
-		return err
+		return nil, err
 	}
 
 	tradeDays, err := models.GetTradeDay(false, 0, 0)
+	tradeDate := []string{}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	queue, err := queue.NewQueue("fetch_stock_daily", 50, 200, func(data interface{}) (interface{}, error) {
 		c := &ctx.Context{}
@@ -153,6 +154,7 @@ func FetchStockPriceDayDaily() error {
 		return nil
 	})
 	for _, day := range tradeDays {
+
 		for code, _ := range SecuritySet {
 			queue.Push(fetchStockDailyDatum{
 				code:     code,
@@ -160,11 +162,14 @@ func FetchStockPriceDayDaily() error {
 			})
 		}
 		if err := models.UpdateTradeDay([]int64{day.Timestamp}); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	queue.Close()
-	return nil
+	for _, day := range tradeDays {
+		tradeDate = append(tradeDate, day.Date)
+	}
+	return tradeDate, nil
 }
 
 /**
