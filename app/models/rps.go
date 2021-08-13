@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 13:51:37
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 16:57:07
+ * @Last Modified time: 2021-08-13 16:46:19
  */
 
 package models
@@ -13,16 +13,14 @@ import (
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RpsBase struct {
-	ID        primitive.ObjectID `bson:"_id, omitempty"`
-	Code      string             `bson:"code, omitempty"`
-	Timestamp int64              `bson:"timestamp, omitempty"`
-	Date      string             `bson:"date, omitempty"`
+	Code      string `bson:"code, omitempty"`
+	Timestamp int64  `bson:"timestamp, omitempty"`
+	Date      string `bson:"date, omitempty"`
 }
 
 type Rps struct {
@@ -94,6 +92,28 @@ func InsertRps(datas []interface{}, name string) error {
 		return err
 	}
 	return nil
+}
+
+func GetRps(t, period int64) ([]*Rps, error) {
+	key := fmt.Sprintf("rps_%d", period)
+	queryBson := bson.D{{"timestamp", t}, {key, bson.D{{"$gte", 85}}}}
+	var results []*Rps
+	cur, err := database.Collection("rps").Find(context.TODO(), queryBson)
+	if err != nil {
+		return nil, err
+	}
+	for cur.Next(context.TODO()) {
+		var elem Rps
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func GetRpsIncrease(opt RpsOption) ([]*RpsIncrease, error) {

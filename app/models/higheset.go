@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 22:17:06
+ * @Last Modified time: 2021-08-13 15:58:05
  */
 
 package models
@@ -67,4 +67,28 @@ func FindHighest(opt SearchPriceOption) ([]*StockPriceDay, error) {
 		return nil, err
 	}
 	return results, nil
+}
+
+func GetHighest(code string, t int64) (*Highest, error) {
+	queryBson := bson.D{{"code", code}, {"timestamp", t}}
+	findOptions := options.FindOne()
+	res := database.Collection("highest").FindOne(context.TODO(), queryBson, findOptions)
+	if res.Err() != nil {
+		return nil, res.Err()
+	}
+	var elem Highest
+	err := res.Decode(&elem)
+	if err != nil {
+		return nil, err
+	}
+	return &elem, nil
+}
+
+func (s *StockPriceDay) CheckApproachHighest(code string, t int64, ratio float64) (bool, error) {
+	highest, err := GetHighest(code, t)
+	if err != nil || highest == nil {
+		return false, err
+	}
+	priceRatio := s.Close / highest.Price
+	return priceRatio <= (2-ratio) && priceRatio >= ratio, nil
 }

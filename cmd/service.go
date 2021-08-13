@@ -2,17 +2,22 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 17:23:35
+ * @Last Modified time: 2021-08-14 10:14:09
  */
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 
 	"github.cedric1996.com/go-trader/app"
 	"github.cedric1996.com/go-trader/app/factor"
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/service"
+	"github.cedric1996.com/go-trader/app/util"
 	"github.com/urfave/cli"
 )
 
@@ -40,6 +45,11 @@ var (
 		Name:   "index",
 		Usage:  "init mongodb table indexes",
 		Action: runInitIndex,
+	}
+	CmdVcp = cli.Command{
+		Name:   "vcp",
+		Usage:  "get vcp",
+		Action: runGetVcp,
 	}
 	subcmdPriceInit = cli.Command{
 		Name:   "init",
@@ -74,6 +84,14 @@ func runStockPriceDaily(c *cli.Context) error {
 		if err := rps.Run(); err != nil {
 			return err
 		}
+		highest := factor.NewHighestFactor("highest", day, 120)
+		if err := highest.Run(); err != nil {
+			return err
+		}
+		trend := factor.NewTrendFactor(day, 60, 0.95, 0.75, 2.0)
+		if err := trend.Run(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -96,11 +114,54 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitHighestTableIndexes(); err != nil {
+	// if err := models.InitHighestTableIndexes(); err != nil {
+	// 	return err
+	// }
+	// if err := models.InitStockTableIndexes(); err != nil {
+	// 	return err
+	// }
+	if err := models.InitVcpTableIndexes(); err != nil {
 		return err
 	}
-	if err := models.InitStockTableIndexes(); err != nil {
+	// if err := models.InitStockTableIndexes(); err != nil {
+	// 	return err
+	// }
+	return nil
+}
+
+func runGetVcp(c *cli.Context) error {
+	app.Init()
+	tradeDay, err := models.GetTradeDay(true, 1, util.TodayUnix())
+	if err != nil || len(tradeDay) == 0 {
+		return nil
+	}
+	vcps, err := models.GetNewVcpByDate(tradeDay[0].Timestamp)
+	if err != nil {
 		return err
 	}
+	codes := make([]string, 0)
+	for _, vcp := range vcps {
+		parts := strings.Split(vcp.RpsBase.Code, ".")
+		prefix := "sh"
+		if parts[1] == "XSHE" {
+			prefix = "sz"
+		}
+		codes = append(codes, prefix+parts[0])
+	}
+	result := make(map[string]interface{})
+	result["leek-fund.stocks"] = codes
+
+	data, err := json.Marshal(&result)
+	if err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile("result.json", data, os.ModePerm); err != nil {
+		return err
+	}
+	// for _, vcp := range vcps {
+	// 	fmt.Println(vcp.RpsBase.Code)
+	// }
+
 	return nil
 }

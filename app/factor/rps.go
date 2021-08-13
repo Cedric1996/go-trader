@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-05 14:10:14
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-06 15:53:38
+ * @Last Modified time: 2021-08-13 17:13:21
  */
 
 package factor
@@ -215,7 +215,7 @@ func (f *rpsFactor) calculate() error {
 				case 20:
 					rps.Rps_20 = int64((total - i) * 100 / total)
 				case 120:
-					rps.Rps_20 = int64((total - i) * 100 / total)
+					rps.Rps_120 = int64((total - i) * 100 / total)
 				}
 				rpsMapMutex.Unlock()
 			}
@@ -230,6 +230,7 @@ func (f *rpsFactor) calculate() error {
 			rpsToInsert = append(rpsToInsert, val)
 		}
 	}
+
 	if err := models.InsertRps(rpsToInsert, "rps"); err != nil {
 		return err
 	}

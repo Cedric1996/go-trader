@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-13 00:00:54
+ * @Last Modified time: 2021-08-14 10:21:29
  */
 
 package cmd
@@ -29,6 +29,7 @@ var (
 			subCmdTaskGetRps,
 			subCmdTaskHighest,
 			subCmdTaskVerifyRefDate,
+			subCmdTaskTrend,
 		},
 	}
 
@@ -55,12 +56,18 @@ var (
 		Usage:  "verify ref date task",
 		Action: runVerifyRefDate,
 	}
+
+	subCmdTaskTrend = cli.Command{
+		Name:   "trend",
+		Usage:  "trend tasks",
+		Action: runTrendFactor,
+	}
 )
 
 func runRpsFactor(c *cli.Context) error {
 	app.Init()
-	t := util.ParseDate("2020-03-22").Unix()
-	tradeDays, err := models.GetTradeDay(true, 1, t)
+	t := util.ParseDate("2020-03-18").Unix()
+	tradeDays, err := models.GetTradeDay(true, 200, t)
 	if err != nil {
 		return err
 	}
@@ -86,7 +93,7 @@ func runRpsFactor(c *cli.Context) error {
 func runGetRps(c *cli.Context) error {
 	startT := time.Now()
 	app.Init()
-	// if err := models.DeleteRpsIncrease(util.ParseDate("2021-06-03").Unix()); err != nil {
+	// if err := models.DeleteRpsIncrease(util.ParseDate("2020-03-20").Unix()); err != nil {
 	// 	return err
 	// }
 	results, err := models.GetRpsIncrease(models.RpsOption{
@@ -103,12 +110,12 @@ func runGetRps(c *cli.Context) error {
 
 func runHighestFactor(c *cli.Context) error {
 	app.Init()
-	t := util.ParseDate("2021-08-11").Unix()
-	tradeDays, err := models.GetTradeDay(true, 1, t)
+	t := util.ParseDate("2021-08-13").Unix()
+	tradeDays, err := models.GetTradeDay(true, 0, t)
 	if err != nil {
 		return err
 	}
-	taskQueue := queue.NewTaskQueue("highest", 20, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("highest", 50, func(data interface{}) error {
 		date := data.(string)
 		f := factor.NewHighestFactor("highest", date, 120)
 		if err := f.Run(); err != nil {
@@ -120,6 +127,7 @@ func runHighestFactor(c *cli.Context) error {
 		for _, day := range tradeDays {
 			*dateChan <- day.Date
 		}
+		fmt.Printf("highest task count: %d\n", len(tradeDays))
 	})
 	if err := taskQueue.Run(); err != nil {
 		return err
@@ -138,6 +146,31 @@ func runVerifyRefDate(c *cli.Context) error {
 	}, func(dateChan *chan interface{}) {
 		for code, _ := range service.SecuritySet {
 			*dateChan <- code
+		}
+	})
+	if err := taskQueue.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runTrendFactor(c *cli.Context) error {
+	app.Init()
+	taskQueue := queue.NewTaskQueue("trend", 50, func(data interface{}) error {
+		date := data.(string)
+		f := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0)
+		if err := f.Run(); err != nil {
+			return err
+		}
+		return nil
+	}, func(dateChan *chan interface{}) {
+		t := util.ParseDate("2020-03-18").Unix()
+		tradeDays, err := models.GetTradeDay(true, 200, t)
+		if err != nil {
+			return
+		}
+		for _, date := range tradeDays {
+			*dateChan <- date.Date
 		}
 	})
 	if err := taskQueue.Run(); err != nil {

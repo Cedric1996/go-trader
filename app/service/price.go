@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 23:58:18
+ * @Last Modified time: 2021-08-13 17:27:18
  */
 package service
 
@@ -153,7 +153,6 @@ func FetchStockPriceDayDaily() ([]string, error) {
 		return nil
 	})
 	for _, day := range tradeDays {
-
 		for code, _ := range SecuritySet {
 			queue.Push(fetchStockDailyDatum{
 				code:     code,

@@ -120,3 +120,7 @@ func DeleteStockPriceDayByCode(code string) error {
 	}
 	return nil
 }
+
+func (s *StockPriceDay) GetVolume() float64 {
+	return float64(s.Volume) * s.Avg / (1000 * 1000 * 100.0)
+}
