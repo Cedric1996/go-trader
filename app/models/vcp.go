@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-14 10:13:33
+ * @Last Modified time: 2021-08-14 10:30:55
  */
 
 package models
@@ -26,13 +26,15 @@ type Vcp struct {
 }
 
 func GetVcpRange(code string, timestamp, period int64) (float64, error) {
-	beginAt := timestamp - period*24*3600
-	highPriceDay, err := getClosePriceByPeriod(SearchPriceOption{Code: code, EndAt: timestamp, BeginAt: beginAt})
+	dayTime := 24 * 3600
+	endAt := timestamp - int64(dayTime)
+	beginAt := endAt - period*int64(dayTime)
+	highPriceDay, err := getClosePriceByPeriod(SearchPriceOption{Code: code, EndAt: endAt, BeginAt: beginAt})
 	if err != nil {
 		return 0, err
 	}
 	beginAt = highPriceDay.Timestamp
-	lowPriceDay, err := getClosePriceByPeriod(SearchPriceOption{Code: code, EndAt: timestamp, BeginAt: beginAt, Reversed: true})
+	lowPriceDay, err := getClosePriceByPeriod(SearchPriceOption{Code: code, EndAt: endAt, BeginAt: beginAt, Reversed: true})
 	if err != nil {
 		return 0, err
 	}

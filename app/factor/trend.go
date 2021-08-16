@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 15:35:18
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-14 10:21:13
+ * @Last Modified time: 2021-08-16 12:28:16
  */
 
 package factor
@@ -10,6 +10,7 @@ package factor
 import (
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
+	"github.cedric1996.com/go-trader/app/service"
 	"github.cedric1996.com/go-trader/app/util"
 )
 
@@ -68,6 +69,9 @@ func (f *TrendFactor) execute() error {
 		vcp, err := models.GetVcpRange(code, f.timestamp, f.period)
 		if err != nil || vcp > f.vcp_ratio {
 			return nil, err
+		}
+		if res, err := service.GetValuation(code, f.calDate); err != nil {
+			return res, err
 		}
 		return models.Vcp{
 			RpsBase: models.RpsBase{

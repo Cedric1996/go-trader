@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-13 15:58:05
+ * @Last Modified time: 2021-08-16 12:15:27
  */
 
 package models
@@ -85,7 +85,8 @@ func GetHighest(code string, t int64) (*Highest, error) {
 }
 
 func (s *StockPriceDay) CheckApproachHighest(code string, t int64, ratio float64) (bool, error) {
-	highest, err := GetHighest(code, t)
+	// filter tradeDay close price goes beyond highest too much
+	highest, err := GetHighest(code, t-24*3600)
 	if err != nil || highest == nil {
 		return false, err
 	}

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-14 10:21:29
+ * @Last Modified time: 2021-08-14 10:31:13
  */
 
 package cmd
@@ -156,7 +156,7 @@ func runVerifyRefDate(c *cli.Context) error {
 
 func runTrendFactor(c *cli.Context) error {
 	app.Init()
-	taskQueue := queue.NewTaskQueue("trend", 50, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("trend", 10, func(data interface{}) error {
 		date := data.(string)
 		f := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0)
 		if err := f.Run(); err != nil {
@@ -164,8 +164,8 @@ func runTrendFactor(c *cli.Context) error {
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2020-03-18").Unix()
-		tradeDays, err := models.GetTradeDay(true, 200, t)
+		t := util.ParseDate("2021-08-13").Unix()
+		tradeDays, err := models.GetTradeDay(true, 10, t)
 		if err != nil {
 			return
 		}
