@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-14 10:14:09
+ * @Last Modified time: 2021-08-17 23:03:28
  */
 package cmd
 
@@ -36,6 +36,13 @@ var (
 			subcmdPriceDaily,
 		},
 	}
+
+	CmdFundamental = cli.Command{
+		Name:   "fundamental",
+		Usage:  "fetchfundamental data",
+		Action: runFundamentalInit,
+	}
+
 	CmdSecurity = cli.Command{
 		Name:   "security",
 		Usage:  "fetch all stock securities info and update stock_info table",
@@ -84,11 +91,18 @@ func runStockPriceDaily(c *cli.Context) error {
 		if err := rps.Run(); err != nil {
 			return err
 		}
-		highest := factor.NewHighestFactor("highest", day, 120)
+		highest := factor.NewHighestFactor("highest", day, 120, false)
 		if err := highest.Run(); err != nil {
 			return err
 		}
-		trend := factor.NewTrendFactor(day, 60, 0.95, 0.75, 2.0)
+		lowest := factor.NewHighestFactor("lowest", day, 120, true)
+		if err := lowest.Run(); err != nil {
+			return err
+		}
+		if err := service.InitFundamental(day); err != nil {
+			return err
+		}
+		trend := factor.NewTrendFactor(day, 60, 0.95, 0.75, 2.0, 80)
 		if err := trend.Run(); err != nil {
 			return err
 		}
@@ -100,6 +114,14 @@ func runStockPriceInit(c *cli.Context) error {
 	app.Init()
 	if err := service.InitStockPrice(); err != nil {
 		return fmt.Errorf("execute init stock price fail, please check it: %s", err)
+	}
+	return nil
+}
+
+func runFundamentalInit(c *cli.Context) error {
+	app.Init()
+	if err := service.InitFundamental("valuation"); err != nil {
+		return err
 	}
 	return nil
 }
@@ -120,7 +142,11 @@ func runInitIndex(c *cli.Context) error {
 	// if err := models.InitStockTableIndexes(); err != nil {
 	// 	return err
 	// }
-	if err := models.InitVcpTableIndexes(); err != nil {
+	if err := models.InitFundamentalIndexes(); err != nil {
+		return err
+	}
+
+	if err := models.DeleteFundamental(1611846000); err != nil {
 		return err
 	}
 	// if err := models.InitStockTableIndexes(); err != nil {
@@ -156,7 +182,7 @@ func runGetVcp(c *cli.Context) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile("result.json", data, os.ModePerm); err != nil {
+	if err := ioutil.WriteFile(".result/result.json", data, os.ModePerm); err != nil {
 		return err
 	}
 	// for _, vcp := range vcps {

@@ -2,13 +2,12 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-13 17:27:18
+ * @Last Modified time: 2021-08-17 16:41:32
  */
 package service
 
 import (
 	"fmt"
-	"strings"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
@@ -175,7 +174,7 @@ func FetchStockPriceDayDaily() ([]string, error) {
  *  stock prices
  */
 func GetStockPriceByCode(code string) ([]*models.StockPriceDay, error) {
-	stocks, err := models.GetStockPriceList(models.SearchPriceOption{
+	stocks, err := models.GetStockPriceList(models.SearchOption{
 		Code:    code,
 		BeginAt: util.ToTimeStamp("2021-05-01"),
 		EndAt:   util.ToTimeStamp("2021-05-12"),
@@ -190,7 +189,7 @@ func GetStockPriceByCode(code string) ([]*models.StockPriceDay, error) {
  * verify ref date check stock price is ref correctly
  */
 func VerifyRefDate(code string) error {
-	vals, err := models.GetStockPriceList(models.SearchPriceOption{
+	vals, err := models.GetStockPriceList(models.SearchOption{
 		Reversed: true,
 		Limit:    1,
 		Code:     code,
@@ -202,7 +201,7 @@ func VerifyRefDate(code string) error {
 		return updateStockPriceDayByCode(code)
 	}
 	price := vals[0]
-	date := strings.Split(util.ToDate(price.Timestamp), "T")[0]
+	date := util.ToDate(price.Timestamp)
 	prices, err := GetPricesByDay(code, date, 1)
 	if err != nil {
 		return err

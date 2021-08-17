@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-08 10:03:45
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-08 10:04:07
+ * @Last Modified time: 2021-08-17 15:56:58
  */
 
 package models
@@ -24,12 +24,7 @@ type TradeDay struct {
 }
 
 func InsertTradeDay(days []interface{}) error {
-	res, err := database.Collection("trade_day").InsertMany(context.TODO(), days)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("init trade day count: %d\n", len(res.InsertedIDs))
-	return nil
+	return InsertMany(days, "trade_day")
 }
 
 func GetTradeDay(isInit bool, limit, timestamp int64) ([]*TradeDay, error) {

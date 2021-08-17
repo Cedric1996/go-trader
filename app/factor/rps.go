@@ -83,7 +83,7 @@ func (f *rpsFactor) get() error {
 	for key, period := range periods {
 		periodSync.Add(1)
 		go func(key string, period int64) error {
-			datas, err := models.GetStockPriceList(models.SearchPriceOption{
+			datas, err := models.GetStockPriceList(models.SearchOption{
 				Timestamp: period,
 			})
 			if err != nil {

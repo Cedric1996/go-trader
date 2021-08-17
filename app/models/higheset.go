@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-16 12:15:27
+ * @Last Modified time: 2021-08-17 20:44:57
  */
 
 package models
@@ -36,16 +36,11 @@ func InitHighestTableIndexes() error {
 	return nil
 }
 
-func InsertHighest(datas []interface{}) error {
-	opts := options.InsertMany()
-	_, err := database.Collection("highest").InsertMany(context.TODO(), datas, opts)
-	if err != nil {
-		return err
-	}
-	return nil
+func InsertHighest(datas []interface{}, name string) error {
+	return InsertMany(datas, name)
 }
 
-func FindHighest(opt SearchPriceOption) ([]*StockPriceDay, error) {
+func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {
 	queryBson := bson.D{{"code", opt.Code}, {"timestamp", bson.D{{"$lte", opt.Timestamp}}}}
 	findOptions := options.Find().SetLimit(opt.Limit)
 	var results []*StockPriceDay

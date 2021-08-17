@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-26 20:33:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 23:32:28
+ * @Last Modified time: 2021-08-17 16:41:19
  */
 
 package util
@@ -40,5 +40,5 @@ func ParseDate(t string) time.Time {
 
 func ToDate(timestamp int64) string {
 	tm := time.Unix(timestamp, 0)
-	return tm.Format(time.RFC3339)
+	return strings.Split(tm.Format(time.RFC3339), "T")[0]
 }

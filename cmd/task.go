@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-14 10:31:13
+ * @Last Modified time: 2021-08-17 22:58:31
  */
 
 package cmd
@@ -30,6 +30,7 @@ var (
 			subCmdTaskHighest,
 			subCmdTaskVerifyRefDate,
 			subCmdTaskTrend,
+			subCmdTaskMovingAverage,
 		},
 	}
 
@@ -61,6 +62,12 @@ var (
 		Name:   "trend",
 		Usage:  "trend tasks",
 		Action: runTrendFactor,
+	}
+
+	subCmdTaskMovingAverage = cli.Command{
+		Name:   "average",
+		Usage:  "moving average tasks",
+		Action: runMovingAverageFactor,
 	}
 )
 
@@ -110,14 +117,14 @@ func runGetRps(c *cli.Context) error {
 
 func runHighestFactor(c *cli.Context) error {
 	app.Init()
-	t := util.ParseDate("2021-08-13").Unix()
+	t := util.ParseDate("2021-08-17").Unix()
 	tradeDays, err := models.GetTradeDay(true, 0, t)
 	if err != nil {
 		return err
 	}
 	taskQueue := queue.NewTaskQueue("highest", 50, func(data interface{}) error {
 		date := data.(string)
-		f := factor.NewHighestFactor("highest", date, 120)
+		f := factor.NewHighestFactor("highest", date, 120, true)
 		if err := f.Run(); err != nil {
 			return err
 		}
@@ -156,16 +163,41 @@ func runVerifyRefDate(c *cli.Context) error {
 
 func runTrendFactor(c *cli.Context) error {
 	app.Init()
-	taskQueue := queue.NewTaskQueue("trend", 10, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("trend", 50, func(data interface{}) error {
 		date := data.(string)
-		f := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0)
+		f := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0, 80)
 		if err := f.Run(); err != nil {
 			return err
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2021-08-13").Unix()
-		tradeDays, err := models.GetTradeDay(true, 10, t)
+		t := util.ParseDate("2021-08-15").Unix()
+		tradeDays, err := models.GetTradeDay(true, 300, t)
+		if err != nil {
+			return
+		}
+		for _, date := range tradeDays {
+			*dateChan <- date.Date
+		}
+	})
+	if err := taskQueue.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runMovingAverageFactor(c *cli.Context) error {
+	app.Init()
+	taskQueue := queue.NewTaskQueue("moving average", 100, func(data interface{}) error {
+		date := data.(string)
+		f := factor.NewMovingAverageFactor(date, 2)
+		if err := f.Run(); err != nil {
+			return err
+		}
+		return nil
+	}, func(dateChan *chan interface{}) {
+		t := util.ParseDate("2021-08-15").Unix()
+		tradeDays, err := models.GetTradeDay(true, 1, t)
 		if err != nil {
 			return
 		}

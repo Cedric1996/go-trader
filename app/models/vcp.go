@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-14 10:30:55
+ * @Last Modified time: 2021-08-17 15:57:27
  */
 
 package models
@@ -29,19 +29,19 @@ func GetVcpRange(code string, timestamp, period int64) (float64, error) {
 	dayTime := 24 * 3600
 	endAt := timestamp - int64(dayTime)
 	beginAt := endAt - period*int64(dayTime)
-	highPriceDay, err := getClosePriceByPeriod(SearchPriceOption{Code: code, EndAt: endAt, BeginAt: beginAt})
+	highPriceDay, err := getClosePriceByPeriod(SearchOption{Code: code, EndAt: endAt, BeginAt: beginAt})
 	if err != nil {
 		return 0, err
 	}
 	beginAt = highPriceDay.Timestamp
-	lowPriceDay, err := getClosePriceByPeriod(SearchPriceOption{Code: code, EndAt: endAt, BeginAt: beginAt, Reversed: true})
+	lowPriceDay, err := getClosePriceByPeriod(SearchOption{Code: code, EndAt: endAt, BeginAt: beginAt, Reversed: true})
 	if err != nil {
 		return 0, err
 	}
 	return 1 - lowPriceDay.Close/highPriceDay.Close, nil
 }
 
-func getClosePriceByPeriod(opt SearchPriceOption) (*StockPriceDay, error) {
+func getClosePriceByPeriod(opt SearchOption) (*StockPriceDay, error) {
 	sortBy := -1
 	if opt.Reversed {
 		sortBy = 1
@@ -61,12 +61,7 @@ func getClosePriceByPeriod(opt SearchPriceOption) (*StockPriceDay, error) {
 }
 
 func InsertVcp(datas []interface{}) error {
-	opts := options.InsertMany()
-	_, err := database.Collection("vcp").InsertMany(context.TODO(), datas, opts)
-	if err != nil {
-		return err
-	}
-	return nil
+	return InsertMany(datas, "vcp")
 }
 
 func GetVcpByDate(t int64) ([]*Vcp, error) {
@@ -95,25 +90,27 @@ func GetVcpByDate(t int64) ([]*Vcp, error) {
 }
 
 func GetNewVcpByDate(t int64) ([]*Vcp, error) {
-	oldVcps, err := GetVcpByDate(t - 3600*24)
-	if err != nil {
-		return nil, err
-	}
-	vcpMap := make(map[string]*Vcp)
-	for _, v := range oldVcps {
-		vcpMap[v.RpsBase.Code] = v
-	}
+	// oldVcps, err := GetVcpByDate(t - 3600*24)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// vcpMap := make(map[string]*Vcp)
+	// for _, v := range oldVcps {
+	// 	vcpMap[v.RpsBase.Code] = v
+	// }
 	newVcps, err := GetVcpByDate(t)
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*Vcp, 0)
-	for _, v := range newVcps {
-		if _, ok := vcpMap[v.RpsBase.Code]; !ok {
-			results = append(results, v)
-		}
-	}
-	return results, nil
+	// results := make([]*Vcp, 0)
+	// for _, v := range newVcps {
+	// 	if _, ok := vcpMap[v.RpsBase.Code]; ok {
+	// 		results = append(results, v)
+	// 	}
+	// }
+	// return results, nil
+	return newVcps, nil
+
 }
 
 func (v *Vcp) String() string {

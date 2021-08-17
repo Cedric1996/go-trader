@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 13:51:37
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-13 16:46:19
+ * @Last Modified time: 2021-08-17 15:56:14
  */
 
 package models
@@ -86,12 +86,7 @@ func InitRpsIncreaseTableIndexes() error {
 }
 
 func InsertRps(datas []interface{}, name string) error {
-	opts := options.InsertMany()
-	_, err := database.Collection(name).InsertMany(context.TODO(), datas, opts)
-	if err != nil {
-		return err
-	}
-	return nil
+	return InsertMany(datas, name)
 }
 
 func GetRps(t, period int64) ([]*Rps, error) {

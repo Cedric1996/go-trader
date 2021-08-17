@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 11:19:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 22:19:47
+ * @Last Modified time: 2021-08-17 22:58:40
  */
 
 package factor
@@ -18,16 +18,18 @@ import (
 )
 
 type highestFactor struct {
-	name    string
-	calDate string
-	period  int64
+	name     string
+	calDate  string
+	period   int64
+	isLowest bool
 }
 
-func NewHighestFactor(name string, calDate string, period int64) *highestFactor {
+func NewHighestFactor(name string, calDate string, period int64, isLowest bool) *highestFactor {
 	return &highestFactor{
-		name:    name,
-		calDate: calDate,
-		period:  period,
+		name:     name,
+		calDate:  calDate,
+		period:   period,
+		isLowest: isLowest,
 	}
 }
 
@@ -49,7 +51,7 @@ func (f *highestFactor) execute() error {
 	}
 	queue, err := queue.NewQueue("highest", 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
-		prices, err := models.FindHighest(models.SearchPriceOption{
+		prices, err := models.FindHighest(models.SearchOption{
 			Code:      code,
 			Limit:     f.period,
 			Timestamp: t,
@@ -57,17 +59,33 @@ func (f *highestFactor) execute() error {
 		if err != nil || len(prices) < int(f.period) {
 			return nil, err
 		}
-		max := 0.0
-		for _, p := range prices {
-			max = math.Max(p.High, max)
+
+		calMaxOrMin := func() float64 {
+			if f.isLowest {
+				min := math.Inf(1)
+				for _, p := range prices {
+					min = math.Min(p.Close, min)
+				}
+				return min
+			} else {
+				max := 0.0
+				for _, p := range prices {
+					max = math.Max(p.High, max)
+				}
+				return max
+			}
 		}
 		return models.Highest{
 			Code:      prices[0].Code,
-			Price:     max,
+			Price:     calMaxOrMin(),
 			Timestamp: prices[0].Timestamp,
 		}, nil
 	}, func(data []interface{}) error {
-		if err := models.InsertHighest(data); err != nil {
+		name := "highest"
+		if f.isLowest {
+			name = "lowest"
+		}
+		if err := models.InsertHighest(data, name); err != nil {
 			return err
 		}
 		return nil

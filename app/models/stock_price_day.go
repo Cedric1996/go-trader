@@ -15,7 +15,7 @@ type StockPriceDay struct {
 	Code  string `bson:"code, omitempty"`
 }
 
-type SearchPriceOption struct {
+type SearchOption struct {
 	Code      string
 	BeginAt   int64
 	EndAt     int64
@@ -65,7 +65,7 @@ func InitStockTableIndexes() error {
 	return nil
 }
 
-func GetStockPriceList(opt SearchPriceOption) ([]*StockPriceDay, error) {
+func GetStockPriceList(opt SearchOption) ([]*StockPriceDay, error) {
 	queryBson := bson.D{}
 	sortBy := -1
 	if opt.Reversed {

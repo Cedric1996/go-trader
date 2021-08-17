@@ -8,9 +8,11 @@
 package factor
 
 import (
+	"math"
+	"sync"
+
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
-	"github.cedric1996.com/go-trader/app/service"
 	"github.cedric1996.com/go-trader/app/util"
 )
 
@@ -18,8 +20,9 @@ type TrendFactor struct {
 	calDate       string  `bson:"calDate, omitempty"`
 	timestamp     int64   `bson:"timestamp, omitempty"`
 	period        int64   `bson:"period, omitempty"`
-	highest_ratio float64 `bson:"ratio, omitempty"`
-	vcp_ratio     float64 `bson:"ratio, omitempty"`
+	highest_ratio float64 `bson:"highest_ratio, omitempty"`
+	vcp_ratio     float64 `bson:"vcp_ratio, omitempty"`
+	market_cap    float64 `bson:"market_cap, omitempty"`
 	volume        float64 `bson:"volume, omitempty"`
 }
 
@@ -28,13 +31,14 @@ type trendDatum struct {
 	rps  int64
 }
 
-func NewTrendFactor(calDate string, period int64, highest_ratio, vcp_ratio, volume float64) *TrendFactor {
+func NewTrendFactor(calDate string, period int64, highest_ratio, vcp_ratio, volume, marketCap float64) *TrendFactor {
 	return &TrendFactor{
 		calDate:       calDate,
 		period:        period,
 		highest_ratio: highest_ratio,
 		vcp_ratio:     vcp_ratio,
 		volume:        volume,
+		market_cap:    marketCap,
 		timestamp:     util.ParseDate(calDate).Unix(),
 	}
 }
@@ -51,10 +55,23 @@ func (f *TrendFactor) execute() error {
 	if err != nil || rps == nil {
 		return err
 	}
+	valuations, err := models.GetValuation(models.SearchOption{Timestamp: f.timestamp})
+	if err != nil {
+		return err
+	}
+	valuationMap := make(map[string]bool)
+	valuationMutex := &sync.RWMutex{}
+	for _, v := range valuations {
+		if v.MarketCap > f.market_cap {
+			valuationMap[v.Code] = true
+		} else if math.Dim(v.MarketCap, 0) > 0.1 {
+			valuationMap[v.Code] = false
+		}
+	}
 	queue, err := queue.NewQueue("trend", 50, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(trendDatum)
 		code := datum.code
-		priceDay, err := models.GetStockPriceList(models.SearchPriceOption{Code: code, Timestamp: f.timestamp})
+		priceDay, err := models.GetStockPriceList(models.SearchOption{Code: code, Timestamp: f.timestamp})
 		if err != nil || priceDay == nil {
 			return nil, err
 		}
@@ -70,8 +87,12 @@ func (f *TrendFactor) execute() error {
 		if err != nil || vcp > f.vcp_ratio {
 			return nil, err
 		}
-		if res, err := service.GetValuation(code, f.calDate); err != nil {
-			return res, err
+		valuationMutex.RLock()
+		defer valuationMutex.RUnlock()
+		if v, ok := valuationMap[code]; ok {
+			if !v {
+				return nil, nil
+			}
 		}
 		return models.Vcp{
 			RpsBase: models.RpsBase{
@@ -81,7 +102,7 @@ func (f *TrendFactor) execute() error {
 			},
 			Period:       f.period,
 			HighestRatio: f.highest_ratio,
-			VcpRatio:     f.vcp_ratio,
+			VcpRatio:     vcp,
 			Rps_120:      datum.rps,
 		}, nil
 	}, func(data []interface{}) error {

@@ -2,30 +2,20 @@
  * @Author: cedric.jia
  * @Date: 2021-04-03 16:36:43
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-16 12:51:02
+ * @Last Modified time: 2021-08-17 19:59:38
  */
 package service
 
 import (
 	"fmt"
+	"strconv"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
+	"github.cedric1996.com/go-trader/app/models"
+	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/util"
 )
-
-func GetFundamentalsData(table fetcher.FinTable, code, date string) error {
-	c := &ctx.Context{}
-	if len(date) == 0 {
-		date = util.Today()
-	}
-	err := fetcher.GetFundamentals(c, table, code, date, 10)
-	if err != nil {
-		fmt.Printf("ERROR: GetFundamentalsData error: %s\n", err)
-		return nil
-	}
-	return err
-}
 
 func GetQueryCount() error {
 	c := &ctx.Context{}
@@ -49,22 +39,78 @@ func GetValuation(code, date string) ([]string, error) {
 }
 
 func parseValuation(c *ctx.Context) ([]interface{}, error) {
-	// resBody := c.ResBody
-	// code := c.Params["code"]
-	// res := make([]interface{}, 0)
-	// if code == "" {
-	// 	return nil, fmt.Errorf("parse stock info with error")
+	resBody := c.ResBody
+	code := c.Params["code"]
+	res := make([]interface{}, 0)
+	if code == "" {
+		return nil, fmt.Errorf("parse stock info with error")
+	}
+	vals := resBody.GetVals()
+	for _, val := range vals {
+		if len(val) < 17 {
+			fmt.Println(val)
+			continue
+		}
+		data := models.Valuation{
+			Code: val[1],
+			Date: val[5],
+		}
+		data.Timestamp = util.ParseDate(val[5]).Unix()
+		data.Capitalization, _ = strconv.ParseFloat(val[14], 10)
+		data.CirculatingCap, _ = strconv.ParseFloat(val[16], 10)
+		data.MarketCap, _ = strconv.ParseFloat(val[15], 10)
+		data.CirculatingMarketCap, _ = strconv.ParseFloat(val[17], 10)
+		data.TurnoverRatio, _ = strconv.ParseFloat(val[10], 10)
+		res = append(res, data)
+	}
+	return res, nil
+}
+
+func initFundamental(code, date string, count int64) ([]interface{}, error) {
+	c := &ctx.Context{}
+	// if err := fetcher.GetFundamentals(c, fetcher.Valuation, code, "2020-07-12", count); err != nil {
+	// 	fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
+	// 	return nil, err
 	// }
-	// vals := resBody.GetVals()
-	// for _, val := range vals {
-	// 	stock := models.Valuation{
-	// 		Code:        val[0],
-	// 		DisplayName: val[1],
-	// 		Name:        val[2],
-	// 		StartDate:   val[3],
-	// 		EndDate:     val[4],
-	// 	}
-	// 	res = append(res, stock)
-	// }
-	return nil, nil
+	if err := fetcher.GetFundamentals(c, fetcher.Valuation, code, date, count); err != nil {
+		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
+		return nil, err
+	}
+	datas, err := parseValuation(c)
+	if err != nil {
+		return nil, err
+	}
+	return datas, nil
+}
+
+func InitFundamental(date string) error {
+	initFundamentalQueue, err := queue.NewQueue("init_fundamental", 100, 100, func(data interface{}) (interface{}, error) {
+		code := data.(string)
+		datas, err := initFundamental(code, date, 1)
+		if err != nil {
+			return nil, err
+		}
+		return datas, nil
+	}, func(datas []interface{}) error {
+		insertData := []interface{}{}
+		for _, v := range datas {
+			arr := v.([]interface{})
+			insertData = append(insertData, arr...)
+		}
+		if len(insertData) == 0 {
+			return nil
+		}
+		if err := models.InsertFundamental(insertData, string(fetcher.Valuation)); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for i, _ := range SecuritySet {
+		initFundamentalQueue.Push(i)
+	}
+	initFundamentalQueue.Close()
+	return nil
 }
