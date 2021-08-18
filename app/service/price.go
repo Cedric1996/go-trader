@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 16:41:32
+ * @Last Modified time: 2021-08-18 20:22:11
  */
 package service
 
@@ -49,22 +49,22 @@ func initStockPriceByDay(code string, count int) error {
  * Stock table
  */
 func InitStockPrice() error {
-	initStockQueue, err := queue.NewQueue("init", 50, 10, func(data interface{}) (interface{}, error) {
-		code := data.(string)
-		if err := initStockPriceByDay(code, 200); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}, func(datas []interface{}) error {
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	for i, _ := range SecuritySet {
-		initStockQueue.Push(i)
-	}
-	initStockQueue.Close()
+	// initStockQueue, err := queue.NewQueue("init", f.calDate, 50, 10, func(data interface{}) (interface{}, error) {
+	// 	code := data.(string)
+	// 	if err := initStockPriceByDay(code, 200); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return nil, nil
+	// }, func(datas []interface{}) error {
+	// 	return nil
+	// })
+	// if err != nil {
+	// 	return err
+	// }
+	// for i, _ := range SecuritySet {
+	// 	initStockQueue.Push(i)
+	// }
+	// initStockQueue.Close()
 	return nil
 }
 
@@ -128,7 +128,7 @@ func FetchStockPriceDayDaily() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	queue, err := queue.NewQueue("fetch_stock_daily", 50, 200, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue("fetch_stock_daily", "", 50, 200, func(data interface{}) (interface{}, error) {
 		c := &ctx.Context{}
 		datum := data.(fetchStockDailyDatum)
 		day := datum.tradeDay

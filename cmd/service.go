@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 23:03:28
+ * @Last Modified time: 2021-08-18 19:16:49
  */
 package cmd
 
@@ -34,6 +34,7 @@ var (
 		Subcommands: []cli.Command{
 			subcmdPriceInit,
 			subcmdPriceDaily,
+			subcmdHighest,
 		},
 	}
 
@@ -69,6 +70,12 @@ var (
 		Usage:  "fetch daily stock price and update stock table",
 		Action: runStockPriceDaily,
 	}
+
+	subcmdHighest = cli.Command{
+		Name:   "highest",
+		Usage:  "fetch daily stock price and update stock table",
+		Action: runGetHighest,
+	}
 )
 
 func runFetchAllSecurities(c *cli.Context) error {
@@ -99,7 +106,7 @@ func runStockPriceDaily(c *cli.Context) error {
 		if err := lowest.Run(); err != nil {
 			return err
 		}
-		if err := service.InitFundamental(day); err != nil {
+		if err := service.InitFundamental(day, 1); err != nil {
 			return err
 		}
 		trend := factor.NewTrendFactor(day, 60, 0.95, 0.75, 2.0, 80)
@@ -120,7 +127,11 @@ func runStockPriceInit(c *cli.Context) error {
 
 func runFundamentalInit(c *cli.Context) error {
 	app.Init()
-	if err := service.InitFundamental("valuation"); err != nil {
+	tradeDay, err := models.GetTradeDay(true, 0, util.ParseDate("2020-07-12").Unix())
+	if err != nil || len(tradeDay) == 0 {
+		return err
+	}
+	if err := service.InitFundamental("2020-07-12", len(tradeDay)); err != nil {
 		return err
 	}
 	return nil
@@ -136,17 +147,7 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	// if err := models.InitHighestTableIndexes(); err != nil {
-	// 	return err
-	// }
-	// if err := models.InitStockTableIndexes(); err != nil {
-	// 	return err
-	// }
-	if err := models.InitFundamentalIndexes(); err != nil {
-		return err
-	}
-
-	if err := models.DeleteFundamental(1611846000); err != nil {
+	if err := models.InitEmaTableIndexes(); err != nil {
 		return err
 	}
 	// if err := models.InitStockTableIndexes(); err != nil {
@@ -189,5 +190,15 @@ func runGetVcp(c *cli.Context) error {
 	// 	fmt.Println(vcp.RpsBase.Code)
 	// }
 
+	return nil
+}
+
+func runGetHighest(c *cli.Context) error {
+	app.Init()
+	// init highest/lowest after 2018-03-12
+	highest, _ := models.GetHighestList(models.SearchOption{Reversed: true, Limit: 1}, "highest")
+	lowest, _ := models.GetHighestList(models.SearchOption{Reversed: true, Limit: 1}, "lowest")
+	valuation, _ := models.GetValuation(models.SearchOption{Reversed: true, Limit: 1})
+	fmt.Println(util.ToDate(highest[0].Timestamp), util.ToDate(lowest[0].Timestamp), util.ToDate(valuation[0].Timestamp))
 	return nil
 }

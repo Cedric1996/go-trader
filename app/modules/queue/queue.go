@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-04 15:11:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 18:07:47
+ * @Last Modified time: 2021-08-18 20:22:32
  */
 
 package queue
@@ -41,12 +41,14 @@ type ChannelQueue struct {
 	executeFunc ExecuteFunc
 	handleFunc  HandleFunc
 	finishNum   int
+	date        string
 }
 
 // NewQueue takes a queue Type, ExecuteFunc, some options and possibly an exemplar and returns a Queue or an error
-func NewQueue(name string, workerNum, batchSize int, executeFunc ExecuteFunc, handleFunc HandleFunc) (*ChannelQueue, error) {
+func NewQueue(name, date string, workerNum, batchSize int, executeFunc ExecuteFunc, handleFunc HandleFunc) (*ChannelQueue, error) {
 	queue := &ChannelQueue{
 		name:        name,
+		date:        date,
 		workerNum:   workerNum,
 		executeFunc: executeFunc,
 		handleFunc:  handleFunc,
@@ -85,7 +87,7 @@ func (q *ChannelQueue) Close() {
 			break
 		}
 	}
-	fmt.Printf("ChannelQueue: %s execute %d tasks\n", q.name, q.finishNum)
+	fmt.Printf("ChannelQueue: %s execute %d tasks, date: %s\n", q.name, q.finishNum, q.date)
 }
 
 // Execute starts worker to execute task

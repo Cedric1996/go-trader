@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 15:35:18
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-16 12:28:16
+ * @Last Modified time: 2021-08-18 20:21:01
  */
 
 package factor
@@ -68,7 +68,7 @@ func (f *TrendFactor) execute() error {
 			valuationMap[v.Code] = false
 		}
 	}
-	queue, err := queue.NewQueue("trend", 50, 1000, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue("trend", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(trendDatum)
 		code := datum.code
 		priceDay, err := models.GetStockPriceList(models.SearchOption{Code: code, Timestamp: f.timestamp})

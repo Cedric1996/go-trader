@@ -22,6 +22,7 @@ type SearchOption struct {
 	Timestamp int64
 	Limit     int64
 	Reversed  bool
+	SortBy    string
 }
 
 func UpdateStockPriceDay(c *ctx.Context) error {

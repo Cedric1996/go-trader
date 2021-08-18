@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 22:58:31
+ * @Last Modified time: 2021-08-18 20:18:56
  */
 
 package cmd
@@ -30,7 +30,7 @@ var (
 			subCmdTaskHighest,
 			subCmdTaskVerifyRefDate,
 			subCmdTaskTrend,
-			subCmdTaskMovingAverage,
+			subCmdTaskEma,
 		},
 	}
 
@@ -64,10 +64,10 @@ var (
 		Action: runTrendFactor,
 	}
 
-	subCmdTaskMovingAverage = cli.Command{
-		Name:   "average",
+	subCmdTaskEma = cli.Command{
+		Name:   "ema",
 		Usage:  "moving average tasks",
-		Action: runMovingAverageFactor,
+		Action: runEmaFactor,
 	}
 )
 
@@ -103,7 +103,7 @@ func runGetRps(c *cli.Context) error {
 	// if err := models.DeleteRpsIncrease(util.ParseDate("2020-03-20").Unix()); err != nil {
 	// 	return err
 	// }
-	results, err := models.GetRpsIncrease(models.RpsOption{
+	results, err := models.GetRpsIncrease(models.SearchOption{
 		Code: "601952.XSHG",
 		// Timestamp: t,
 	})
@@ -186,18 +186,18 @@ func runTrendFactor(c *cli.Context) error {
 	return nil
 }
 
-func runMovingAverageFactor(c *cli.Context) error {
+func runEmaFactor(c *cli.Context) error {
 	app.Init()
-	taskQueue := queue.NewTaskQueue("moving average", 100, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("ema", 20, func(data interface{}) error {
 		date := data.(string)
-		f := factor.NewMovingAverageFactor(date, 2)
+		f := factor.NewEmaFactor(date, 1)
 		if err := f.Run(); err != nil {
 			return err
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2021-08-15").Unix()
-		tradeDays, err := models.GetTradeDay(true, 1, t)
+		t := util.ParseDate("2021-08-17").Unix()
+		tradeDays, err := models.GetTradeDay(true, 800, t)
 		if err != nil {
 			return
 		}

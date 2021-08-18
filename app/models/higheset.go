@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 20:44:57
+ * @Last Modified time: 2021-08-18 19:52:09
  */
 
 package models
@@ -29,7 +29,7 @@ func InitHighestTableIndexes() error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"price", -1}},
 	})
-	_, err := database.Collection("highest").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection("lowest").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}
@@ -64,24 +64,62 @@ func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {
 	return results, nil
 }
 
-func GetHighest(code string, t int64) (*Highest, error) {
-	queryBson := bson.D{{"code", code}, {"timestamp", t}}
-	findOptions := options.FindOne()
-	res := database.Collection("highest").FindOne(context.TODO(), queryBson, findOptions)
-	if res.Err() != nil {
-		return nil, res.Err()
+func GetHighest(code string, t, count int64) (*Highest, error) {
+	datas, err := GetHighestList(SearchOption{Code: code, EndAt: t, Limit: count}, "highest")
+	if err != nil || len(datas) == 0 {
+		return nil, err
 	}
-	var elem Highest
-	err := res.Decode(&elem)
+	return datas[0], nil
+}
+
+func GetLowest(code string, t, count int64) (*Highest, error) {
+	datas, err := GetHighestList(SearchOption{Code: code, EndAt: t, Limit: count}, "lowest")
+	if err != nil || len(datas) == 0 {
+		return nil, err
+	}
+	return datas[0], nil
+}
+
+func GetHighestList(opt SearchOption, name string) ([]*Highest, error) {
+	sortBy := -1
+	if opt.Reversed {
+		sortBy = 1
+	}
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit)
+	var results []*Highest
+	queryBson := bson.D{}
+	if len(opt.Code) > 0 {
+		queryBson = append(queryBson, bson.E{"code", opt.Code})
+	}
+	if opt.EndAt > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	}
+	if opt.Timestamp > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
+	}
+	cur, err := database.Collection(name).Find(context.TODO(), queryBson, findOptions)
 	if err != nil {
 		return nil, err
 	}
-	return &elem, nil
+
+	for cur.Next(context.TODO()) {
+		var elem Highest
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func (s *StockPriceDay) CheckApproachHighest(code string, t int64, ratio float64) (bool, error) {
 	// filter tradeDay close price goes beyond highest too much
-	highest, err := GetHighest(code, t-24*3600)
+	highest, err := GetHighest(code, t-24*3600, 1)
 	if err != nil || highest == nil {
 		return false, err
 	}

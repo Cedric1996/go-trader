@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 15:57:27
+ * @Last Modified time: 2021-08-18 18:05:24
  */
 
 package models
@@ -90,14 +90,14 @@ func GetVcpByDate(t int64) ([]*Vcp, error) {
 }
 
 func GetNewVcpByDate(t int64) ([]*Vcp, error) {
-	// oldVcps, err := GetVcpByDate(t - 3600*24)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// vcpMap := make(map[string]*Vcp)
-	// for _, v := range oldVcps {
-	// 	vcpMap[v.RpsBase.Code] = v
-	// }
+	oldVcps, err := GetVcpByDate(t - 3600*24)
+	if err != nil {
+		return nil, err
+	}
+	vcpMap := make(map[string]*Vcp)
+	for _, v := range oldVcps {
+		vcpMap[v.RpsBase.Code] = v
+	}
 	newVcps, err := GetVcpByDate(t)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func InitVcpTableIndexes() error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"rps_120", -1}},
 	})
-	_, err := database.Collection("highest").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection("vcp").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-17 14:13:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 18:25:09
+ * @Last Modified time: 2021-08-18 20:20:35
  */
 
 package factor
@@ -14,31 +14,28 @@ import (
 	"github.cedric1996.com/go-trader/app/util"
 )
 
-const MAX_MA_RANGE = 30
+const MAX_MA_RANGE = 60
 
-type movingAverageFactor struct {
+type EmaFactor struct {
 	calDate   string
 	timestamp int64
 	count     int64
 }
 
-func NewMovingAverageFactor(calDate string, count int64) *movingAverageFactor {
-	return &movingAverageFactor{
+func NewEmaFactor(calDate string, count int64) *EmaFactor {
+	return &EmaFactor{
 		calDate:   calDate,
 		timestamp: util.ParseDate(calDate).Unix(),
 		count:     count,
 	}
 }
 
-func (f *movingAverageFactor) Run() error {
-	if err := f.run(); err != nil {
-		return err
-	}
-	return nil
+func (f *EmaFactor) Run() error {
+	return f.run()
 }
 
-func (f *movingAverageFactor) run() error {
-	queue, _ := queue.NewQueue("moving average", 50, 1, func(data interface{}) (interface{}, error) {
+func (f *EmaFactor) run() error {
+	queue, _ := queue.NewQueue("index moving average", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		prices, err := models.GetStockPriceList(models.SearchOption{
 			Code:  code,
@@ -53,20 +50,20 @@ func (f *movingAverageFactor) run() error {
 		for i, p := range prices {
 			closeArr[i] = p.Close
 		}
-		ema_5 := calEma(closeArr, 5)
-		ema_10 := calEma(closeArr, 10)
-		ema_20 := calEma(closeArr, 20)
-		ema_30 := calEma(closeArr, 30)
+		ema_6 := calEma(closeArr, 10)
+		ema_12 := calEma(closeArr, 20)
+		ema_26 := calEma(closeArr, 30)
+		ema_60 := calEma(closeArr, 60)
 		var i int64
 		for i = 0; i < f.count; i++ {
-			results[i] = models.MovingAverage{
+			results[i] = models.Ema{
 				Code:      prices[i].Code,
 				Date:      util.ToDate(prices[i].Timestamp),
 				Timestamp: prices[i].Timestamp,
-				MA_5:      ema_5[i],
-				MA_10:     ema_10[i],
-				MA_20:     ema_20[i],
-				MA_30:     ema_30[i],
+				MA_6:      ema_6[i],
+				MA_26:     ema_12[i],
+				MA_12:     ema_26[i],
+				MA_60:     ema_60[i],
 			}
 		}
 		return results, nil
@@ -75,7 +72,10 @@ func (f *movingAverageFactor) run() error {
 		for _, v := range data {
 			datas = append(datas, v.([]interface{})...)
 		}
-		if err := models.InsertMovingAverage(datas); err != nil {
+		if len(datas) == 0 {
+			return nil
+		}
+		if err := models.InsertEma(datas); err != nil {
 			return err
 		}
 		return nil

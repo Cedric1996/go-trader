@@ -1,8 +1,8 @@
 /*
  * @Author: cedric.jia
  * @Date: 2021-08-16 12:30:24
- * @Last Modified by:   cedric.jia
- * @Last Modified time: 2021-08-16 12:30:24
+ * @Last Modified by: cedric.jia
+ * @Last Modified time: 2021-08-18 12:29:08
  */
 
 package models
@@ -60,11 +60,23 @@ func DeleteFundamental(timestamp int64) error {
 }
 
 func GetValuation(opt SearchOption) ([]*Valuation, error) {
-	filter := bson.M{"timestamp": opt.Timestamp}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", -1}})
+	sortBy := -1
+	if opt.Reversed {
+		sortBy = 1
+	}
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}})
 	results := make([]*Valuation, 0)
-
-	cur, err := database.Collection("valuation").Find(context.TODO(), filter, findOptions)
+	queryBson := bson.D{}
+	if len(opt.Code) > 0 {
+		queryBson = append(queryBson, bson.E{"code", opt.Code})
+	}
+	if opt.EndAt > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	}
+	if opt.Timestamp > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
+	}
+	cur, err := database.Collection("valuation").Find(context.TODO(), queryBson, findOptions)
 	if err != nil {
 		return results, err
 	}

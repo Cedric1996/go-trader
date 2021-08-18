@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 13:51:37
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 15:56:14
+ * @Last Modified time: 2021-08-18 11:38:28
  */
 
 package models
@@ -111,10 +111,13 @@ func GetRps(t, period int64) ([]*Rps, error) {
 	return results, nil
 }
 
-func GetRpsIncrease(opt RpsOption) ([]*RpsIncrease, error) {
+func GetRpsIncrease(opt SearchOption) ([]*RpsIncrease, error) {
 	queryBson := bson.D{}
 	findOptions := options.Find().SetSort(bson.D{{"timestamp", 1}})
 	var results []*RpsIncrease
+	if opt.Limit > 0 {
+		findOptions.SetLimit(opt.Limit)
+	}
 	if len(opt.SortBy) > 0 {
 		findOptions.SetSort(bson.D{{opt.SortBy, -1}})
 	}

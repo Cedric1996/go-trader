@@ -2,11 +2,12 @@
  * @Author: cedric.jia
  * @Date: 2021-04-03 16:36:43
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 19:59:38
+ * @Last Modified time: 2021-08-18 20:21:06
  */
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -16,6 +17,15 @@ import (
 	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/util"
 )
+
+func GetCurrentToken() (string, error) {
+	c := &ctx.Context{}
+	if err := fetcher.GetCurrentToken(c); err != nil {
+		fmt.Printf("ERROR: GetCurrentToken error: %s\n", err)
+		return "", err
+	}
+	return c.ResBody.GetNoKeyVals()[0], nil
+}
 
 func GetQueryCount() error {
 	c := &ctx.Context{}
@@ -66,12 +76,8 @@ func parseValuation(c *ctx.Context) ([]interface{}, error) {
 	return res, nil
 }
 
-func initFundamental(code, date string, count int64) ([]interface{}, error) {
+func initFundamental(code, date string, count int) ([]interface{}, error) {
 	c := &ctx.Context{}
-	// if err := fetcher.GetFundamentals(c, fetcher.Valuation, code, "2020-07-12", count); err != nil {
-	// 	fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
-	// 	return nil, err
-	// }
 	if err := fetcher.GetFundamentals(c, fetcher.Valuation, code, date, count); err != nil {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
 		return nil, err
@@ -80,13 +86,20 @@ func initFundamental(code, date string, count int64) ([]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return datas, nil
+	if len(datas) == 0 {
+		return nil, errors.New("fetch no fundamental data")
+	}
+	res := make([]interface{}, 0)
+	for i := 0; i < len(datas)/5; i++ {
+		res = append(res, datas[i*5])
+	}
+	return res, nil
 }
 
-func InitFundamental(date string) error {
-	initFundamentalQueue, err := queue.NewQueue("init_fundamental", 100, 100, func(data interface{}) (interface{}, error) {
+func InitFundamental(date string, count int) error {
+	initFundamentalQueue, err := queue.NewQueue("init_fundamental", date, 50, 10, func(data interface{}) (interface{}, error) {
 		code := data.(string)
-		datas, err := initFundamental(code, date, 1)
+		datas, err := initFundamental(code, date, count)
 		if err != nil {
 			return nil, err
 		}

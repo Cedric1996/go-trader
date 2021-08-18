@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-05 14:10:14
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-13 17:13:21
+ * @Last Modified time: 2021-08-18 20:20:57
  */
 
 package factor
@@ -125,7 +125,7 @@ func (f *rpsFactor) run() error {
 	if f.priceMap == nil {
 		return fmt.Errorf("rps factor priceMap is nil, please check")
 	}
-	queue, err := queue.NewQueue("rps_increase", 50, 1000, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue("rps_increase", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(rpsDatum)
 		val := datum.rpsPrice
 		rpsIncrease := &models.RpsIncrease{
@@ -194,7 +194,7 @@ func (f *rpsFactor) calculate() error {
 	for _, val := range p {
 		rpsSync.Add(1)
 		go func(val int64) error {
-			rpsIncreaseDatas, err := models.GetRpsIncrease(models.RpsOption{
+			rpsIncreaseDatas, err := models.GetRpsIncrease(models.SearchOption{
 				Timestamp: timestamp,
 				SortBy:    fmt.Sprintf("increase_%d", val),
 			})

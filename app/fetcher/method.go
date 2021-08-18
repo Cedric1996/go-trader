@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-04 20:49:24
+ * @Last Modified time: 2021-08-18 13:06:22
  */
 
 package fetcher
@@ -14,6 +14,16 @@ import (
 var (
 	queryCount = 0
 )
+
+func GetCurrentToken(c *ctx.Context) error {
+	params := map[string]interface{}{
+		"method": "get_token",
+		"mob":    "18851280888",
+		"pwd":    "ZJjc961031",
+	}
+	c.Params = params
+	return fetchData(c, "get current token")
+}
 
 // GetQueryCount return remain count of query daily.
 // 获取当日剩余查询条数
@@ -203,7 +213,7 @@ func GetIndustryStock(c *ctx.Context, code, date string) error {
 }
 
 // Query 1000 data once by default.
-func GetFundamentals(c *ctx.Context, table FinTable, code, date string, count int64) error {
+func GetFundamentals(c *ctx.Context, table FinTable, code, date string, count int) error {
 	params := map[string]interface{}{
 		"method": "get_fundamentals",
 		"token":  Token(),

@@ -2,53 +2,38 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 13:04:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 20:34:20
+ * @Last Modified time: 2021-08-18 12:48:52
  */
 
 package fetcher
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
+	"fmt"
 	"strings"
+	"sync"
 	"time"
+
+	ctx "github.cedric1996.com/go-trader/app/context"
 )
 
-var token string
+var (
+	token     string
+	tokenInit sync.Once
+)
 
 func Token() string {
-	if len(token) > 0 {
-		return token
-	}
-
-	body := map[string]interface{}{
-		"method": "get_token",
-		"mob":    "18851280888",
-		"pwd":    "ZJjc961031",
-	}
-
-	bodyStr, err := json.Marshal(body)
-	if err != nil {
-		return ""
-	}
-	req, err := http.NewRequest("POST", JQDATA_URL, strings.NewReader(string(bodyStr)))
-	resp, err := client.Do(req)
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
+	tokenInit.Do(func() {
+		c := &ctx.Context{}
+		if err := GetCurrentToken(c); err != nil {
+			fmt.Printf("ERROR: GetCurrentToken error: %s\n", err)
+			return
 		}
-	}()
-	res, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return ""
-	}
-	token = string(res)
+		token = c.ResBody.GetNoKeyVals()[0]
+	})
 	return token
 }
 
-
 func PostRefDate() string {
-	t:= strings.Split(time.Now().Format(time.RFC3339), "T")[0]
+	t := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
 	return t
 }

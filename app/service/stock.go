@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-24 17:54:29
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-13 11:01:41
+ * @Last Modified time: 2021-08-18 12:45:58
  */
 
 package service
@@ -35,7 +35,6 @@ func Init() {
 			SecuritySet[security.Code] = security.StartDate
 		}
 	})
-	return
 }
 
 func GetAllSecurities() error {
