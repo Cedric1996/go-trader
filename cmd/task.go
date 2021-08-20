@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 20:18:56
+ * @Last Modified time: 2021-08-20 15:40:20
  */
 
 package cmd
@@ -31,6 +31,7 @@ var (
 			subCmdTaskVerifyRefDate,
 			subCmdTaskTrend,
 			subCmdTaskEma,
+			subCmdTaskHighLowIndex,
 		},
 	}
 
@@ -68,6 +69,12 @@ var (
 		Name:   "ema",
 		Usage:  "moving average tasks",
 		Action: runEmaFactor,
+	}
+
+	subCmdTaskHighLowIndex = cli.Command{
+		Name:   "nh_nl",
+		Usage:  "new high new low index",
+		Action: runHighLowIndexFactor,
 	}
 )
 
@@ -118,11 +125,11 @@ func runGetRps(c *cli.Context) error {
 func runHighestFactor(c *cli.Context) error {
 	app.Init()
 	t := util.ParseDate("2021-08-17").Unix()
-	tradeDays, err := models.GetTradeDay(true, 0, t)
+	tradeDays, err := models.GetTradeDay(true, 4, t)
 	if err != nil {
 		return err
 	}
-	taskQueue := queue.NewTaskQueue("highest", 50, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("highest", 4, func(data interface{}) error {
 		date := data.(string)
 		f := factor.NewHighestFactor("highest", date, 120, true)
 		if err := f.Run(); err != nil {
@@ -206,6 +213,15 @@ func runEmaFactor(c *cli.Context) error {
 		}
 	})
 	if err := taskQueue.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runHighLowIndexFactor(c *cli.Context) error {
+	app.Init()
+	f := factor.NewHighLowIndexFactor("nh_nw", "2021-08-17", true)
+	if err := f.Run(); err != nil {
 		return err
 	}
 	return nil

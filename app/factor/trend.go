@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 15:35:18
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 20:21:01
+ * @Last Modified time: 2021-08-20 15:05:55
  */
 
 package factor
@@ -48,6 +48,10 @@ func (f *TrendFactor) Run() error {
 		return err
 	}
 	return nil
+}
+
+func (f *TrendFactor) Clean() error {
+	return models.RemoveVcp(f.timestamp)
 }
 
 func (f *TrendFactor) execute() error {

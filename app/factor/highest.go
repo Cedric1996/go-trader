@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 11:19:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 20:20:53
+ * @Last Modified time: 2021-08-20 15:04:10
  */
 
 package factor
@@ -18,18 +18,20 @@ import (
 )
 
 type highestFactor struct {
-	name     string
-	calDate  string
-	period   int64
-	isLowest bool
+	name      string
+	calDate   string
+	period    int64
+	isLowest  bool
+	timestamp int64
 }
 
 func NewHighestFactor(name string, calDate string, period int64, isLowest bool) *highestFactor {
 	return &highestFactor{
-		name:     name,
-		calDate:  calDate,
-		period:   period,
-		isLowest: isLowest,
+		name:      name,
+		calDate:   calDate,
+		period:    period,
+		isLowest:  isLowest,
+		timestamp: util.ParseDate(calDate).Unix(),
 	}
 }
 
@@ -40,13 +42,16 @@ func (f *highestFactor) Run() error {
 	return nil
 }
 
+func (f *highestFactor) Clean() error {
+	return models.RemoveHighest(f.timestamp)
+}
+
 func (f *highestFactor) execute() error {
-	t := util.ParseDate(f.calDate).Unix()
-	day, err := models.GetTradeDay(true, 1, t)
+	day, err := models.GetTradeDay(true, 1, f.timestamp)
 	if err != nil {
 		return err
 	}
-	if len(day) == 0 || day[0].Timestamp != t {
+	if len(day) == 0 || day[0].Timestamp != f.timestamp {
 		return fmt.Errorf("error: highest factor task date: %s", f.calDate)
 	}
 	queue, err := queue.NewQueue("highest", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
@@ -54,7 +59,7 @@ func (f *highestFactor) execute() error {
 		prices, err := models.FindHighest(models.SearchOption{
 			Code:      code,
 			Limit:     f.period,
-			Timestamp: t,
+			Timestamp: f.timestamp,
 		})
 		if err != nil || len(prices) < int(f.period) {
 			return nil, err

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-17 15:51:51
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 19:15:33
+ * @Last Modified time: 2021-08-20 14:37:09
  */
 
 package models
@@ -40,4 +40,8 @@ func InitEmaTableIndexes() error {
 		return err
 	}
 	return nil
+}
+
+func RemoveEma(t int64) error {
+	return RemoveMany(t, "ema")
 }

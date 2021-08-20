@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 13:51:37
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 11:38:28
+ * @Last Modified time: 2021-08-20 14:59:17
  */
 
 package models
@@ -87,6 +87,14 @@ func InitRpsIncreaseTableIndexes() error {
 
 func InsertRps(datas []interface{}, name string) error {
 	return InsertMany(datas, name)
+}
+
+func RemoveRps(t int64) (err error) {
+	err = RemoveMany(t, "rps")
+	if err == nil {
+		err = RemoveMany(t, "rps_increase")
+	}
+	return err
 }
 
 func GetRps(t, period int64) ([]*Rps, error) {

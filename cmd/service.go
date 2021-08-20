@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 19:16:49
+ * @Last Modified time: 2021-08-20 14:31:47
  */
 package cmd
 
@@ -114,6 +114,11 @@ func runStockPriceDaily(c *cli.Context) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func runStockPriceClean(c *cli.Context) error {
+	app.Init()
 	return nil
 }
 

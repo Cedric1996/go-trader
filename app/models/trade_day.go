@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-08 10:03:45
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 15:56:58
+ * @Last Modified time: 2021-08-20 15:33:27
  */
 
 package models
@@ -25,6 +25,10 @@ type TradeDay struct {
 
 func InsertTradeDay(days []interface{}) error {
 	return InsertMany(days, "trade_day")
+}
+
+func RemoveTradeDay(t int64) error {
+	return RemoveMany(t, "trade_day")
 }
 
 func GetTradeDay(isInit bool, limit, timestamp int64) ([]*TradeDay, error) {

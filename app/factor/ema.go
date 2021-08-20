@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-17 14:13:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 20:20:35
+ * @Last Modified time: 2021-08-20 15:43:58
  */
 
 package factor
@@ -16,25 +16,29 @@ import (
 
 const MAX_MA_RANGE = 60
 
-type EmaFactor struct {
+type emaFactor struct {
 	calDate   string
 	timestamp int64
 	count     int64
 }
 
-func NewEmaFactor(calDate string, count int64) *EmaFactor {
-	return &EmaFactor{
-		calDate:   calDate,
-		timestamp: util.ParseDate(calDate).Unix(),
+func NewEmaFactor(date string, count int64) *emaFactor {
+	return &emaFactor{
+		calDate:   date,
 		count:     count,
+		timestamp: util.ParseDate(date).Unix(),
 	}
 }
 
-func (f *EmaFactor) Run() error {
+func (f *emaFactor) Run() error {
 	return f.run()
 }
 
-func (f *EmaFactor) run() error {
+func (f *emaFactor) Clean() error {
+	return models.RemoveEma(f.timestamp)
+}
+
+func (f *emaFactor) run() error {
 	queue, _ := queue.NewQueue("index moving average", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		prices, err := models.GetStockPriceList(models.SearchOption{
@@ -50,9 +54,9 @@ func (f *EmaFactor) run() error {
 		for i, p := range prices {
 			closeArr[i] = p.Close
 		}
-		ema_6 := calEma(closeArr, 10)
-		ema_12 := calEma(closeArr, 20)
-		ema_26 := calEma(closeArr, 30)
+		ema_6 := calEma(closeArr, 6)
+		ema_12 := calEma(closeArr, 12)
+		ema_26 := calEma(closeArr, 26)
 		ema_60 := calEma(closeArr, 60)
 		var i int64
 		for i = 0; i < f.count; i++ {
@@ -61,8 +65,8 @@ func (f *EmaFactor) run() error {
 				Date:      util.ToDate(prices[i].Timestamp),
 				Timestamp: prices[i].Timestamp,
 				MA_6:      ema_6[i],
-				MA_26:     ema_12[i],
-				MA_12:     ema_26[i],
+				MA_12:     ema_12[i],
+				MA_26:     ema_26[i],
 				MA_60:     ema_60[i],
 			}
 		}

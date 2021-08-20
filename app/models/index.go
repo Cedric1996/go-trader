@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:18:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 19:21:12
+ * @Last Modified time: 2021-08-20 15:07:05
  */
 
 package models
@@ -17,4 +17,8 @@ type HighLowIndex struct {
 
 func InsertHighLowIndex(datas []interface{}) error {
 	return InsertMany(datas, "high_low_index")
+}
+
+func RemoveHighLowIndex(t int64) error {
+	return RemoveMany(t, "high_low_index")
 }

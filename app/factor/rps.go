@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-05 14:10:14
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 20:20:57
+ * @Last Modified time: 2021-08-20 15:05:48
  */
 
 package factor
@@ -19,11 +19,12 @@ import (
 )
 
 type rpsFactor struct {
-	name     string
-	period   int
-	percent  int
-	calDate  string
-	priceMap map[string]rpsPrice
+	name      string
+	period    int
+	percent   int
+	calDate   string
+	timestamp int64
+	priceMap  map[string]rpsPrice
 }
 
 type rpsDatum struct {
@@ -40,11 +41,12 @@ type closePriceDatum struct {
 
 func NewRpsFactor(name string, period int, percent int, calDate string) *rpsFactor {
 	return &rpsFactor{
-		name:     name,
-		period:   period,
-		percent:  percent,
-		calDate:  calDate,
-		priceMap: make(map[string]rpsPrice),
+		name:      name,
+		period:    period,
+		percent:   percent,
+		calDate:   calDate,
+		priceMap:  make(map[string]rpsPrice),
+		timestamp: util.ParseDate(calDate).Unix(),
 	}
 }
 
@@ -61,15 +63,18 @@ func (r *rpsFactor) Run() error {
 	return nil
 }
 
+func (f *rpsFactor) Clean() error {
+	return models.RemoveRps(f.timestamp)
+}
+
 func (f *rpsFactor) get() error {
 	var max int64
 	max = 120
 	p := []int64{5, 10, 20, max}
 	periods := make(map[string]int64)
-	timestamp := util.ParseDate(f.calDate).Unix()
-	periods["period_0"] = timestamp
+	periods["period_0"] = f.timestamp
 
-	timestamps, err := models.GetTradeDayByPeriod(max+1, timestamp)
+	timestamps, err := models.GetTradeDayByPeriod(max+1, f.timestamp)
 	if err != nil {
 		return err
 	}
@@ -182,11 +187,10 @@ func (f *rpsFactor) run() error {
  */
 func (f *rpsFactor) calculate() error {
 	p := []int64{5, 10, 20, 120}
-	timestamp := util.ParseDate(f.calDate).Unix()
 	rpsMap := make(map[string]*models.Rps)
 	for code, _ := range service.SecuritySet {
 		rpsMap[code] = &models.Rps{
-			RpsBase: models.RpsBase{Code: code, Date: f.calDate, Timestamp: timestamp},
+			RpsBase: models.RpsBase{Code: code, Date: f.calDate, Timestamp: f.timestamp},
 		}
 	}
 	rpsMapMutex := sync.RWMutex{}
@@ -195,7 +199,7 @@ func (f *rpsFactor) calculate() error {
 		rpsSync.Add(1)
 		go func(val int64) error {
 			rpsIncreaseDatas, err := models.GetRpsIncrease(models.SearchOption{
-				Timestamp: timestamp,
+				Timestamp: f.timestamp,
 				SortBy:    fmt.Sprintf("increase_%d", val),
 			})
 			if err != nil {

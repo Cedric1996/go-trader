@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 18:05:24
+ * @Last Modified time: 2021-08-20 15:06:23
  */
 
 package models
@@ -62,6 +62,10 @@ func getClosePriceByPeriod(opt SearchOption) (*StockPriceDay, error) {
 
 func InsertVcp(datas []interface{}) error {
 	return InsertMany(datas, "vcp")
+}
+
+func RemoveVcp(t int64) (err error) {
+	return RemoveMany(t, "vcp")
 }
 
 func GetVcpByDate(t int64) ([]*Vcp, error) {

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 19:52:09
+ * @Last Modified time: 2021-08-20 15:02:36
  */
 
 package models
@@ -40,6 +40,14 @@ func InsertHighest(datas []interface{}, name string) error {
 	return InsertMany(datas, name)
 }
 
+func RemoveHighest(t int64) (err error) {
+	err = RemoveMany(t, "highest")
+	if err != nil {
+		err = RemoveMany(t, "lowest")
+	}
+	return err
+}
+
 func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {
 	queryBson := bson.D{{"code", opt.Code}, {"timestamp", bson.D{{"$lte", opt.Timestamp}}}}
 	findOptions := options.Find().SetLimit(opt.Limit)
@@ -64,20 +72,20 @@ func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {
 	return results, nil
 }
 
-func GetHighest(code string, t, count int64) (*Highest, error) {
+func GetHighest(code string, t, count int64) ([]*Highest, error) {
 	datas, err := GetHighestList(SearchOption{Code: code, EndAt: t, Limit: count}, "highest")
 	if err != nil || len(datas) == 0 {
 		return nil, err
 	}
-	return datas[0], nil
+	return datas, nil
 }
 
-func GetLowest(code string, t, count int64) (*Highest, error) {
+func GetLowest(code string, t, count int64) ([]*Highest, error) {
 	datas, err := GetHighestList(SearchOption{Code: code, EndAt: t, Limit: count}, "lowest")
 	if err != nil || len(datas) == 0 {
 		return nil, err
 	}
-	return datas[0], nil
+	return datas, nil
 }
 
 func GetHighestList(opt SearchOption, name string) ([]*Highest, error) {
@@ -123,6 +131,6 @@ func (s *StockPriceDay) CheckApproachHighest(code string, t int64, ratio float64
 	if err != nil || highest == nil {
 		return false, err
 	}
-	priceRatio := s.Close / highest.Price
+	priceRatio := s.Close / highest[0].Price
 	return priceRatio <= (2-ratio) && priceRatio >= ratio, nil
 }
