@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 12:18:52
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-07-26 21:01:30
+ * @Last Modified time: 2021-08-21 15:53:52
  */
 
 package fetcher
@@ -39,21 +39,14 @@ func (err ErrRequestRepeated) Error() string {
 }
 
 func fetchData(c *ctx.Context, tag string) error {
-	if err := request(c);err!= nil {
-		return fmt.Errorf("error %s: %s",tag, err)
+	if err := request(c); err != nil {
+		return fmt.Errorf("error %s: %s", tag, err)
 	}
 	return nil
 }
 
 // Request create a http request
 func request(c *ctx.Context) error {
-	isRequested, err := checkRequest(c.Params)
-	if err != nil {
-		return err
-	} else if isRequested {
-		return  nil
-	}
-
 	bodyStr, err := json.Marshal(c.Params)
 	if err != nil {
 		return err
@@ -65,6 +58,9 @@ func request(c *ctx.Context) error {
 			resp.Body.Close()
 		}
 	}()
+	if err != nil {
+		return fmt.Errorf("resp error %s", err)
+	}
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err

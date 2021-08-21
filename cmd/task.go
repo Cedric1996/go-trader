@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 15:40:20
+ * @Last Modified time: 2021-08-21 22:55:14
  */
 
 package cmd
@@ -220,7 +220,7 @@ func runEmaFactor(c *cli.Context) error {
 
 func runHighLowIndexFactor(c *cli.Context) error {
 	app.Init()
-	f := factor.NewHighLowIndexFactor("nh_nw", "2021-08-17", true)
+	f := factor.NewHighLowIndexFactor("nh_nw", "2021-08-20", true)
 	if err := f.Run(); err != nil {
 		return err
 	}

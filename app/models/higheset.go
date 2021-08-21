@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 15:02:36
+ * @Last Modified time: 2021-08-20 16:49:51
  */
 
 package models
@@ -40,12 +40,12 @@ func InsertHighest(datas []interface{}, name string) error {
 	return InsertMany(datas, name)
 }
 
-func RemoveHighest(t int64) (err error) {
-	err = RemoveMany(t, "highest")
-	if err != nil {
-		err = RemoveMany(t, "lowest")
+func RemoveHighest(t int64, isLowest bool) error {
+	name := "highest"
+	if isLowest {
+		name = "lowest"
 	}
-	return err
+	return RemoveMany(t, name)
 }
 
 func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {

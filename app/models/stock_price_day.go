@@ -104,13 +104,8 @@ func GetStockPriceList(opt SearchOption) ([]*StockPriceDay, error) {
 	return results, nil
 }
 
-func DeleteStockPriceDayByDay(timestamp int64) error {
-	filter := bson.M{"timestamp": timestamp}
-	_, err := database.Collection("stock").DeleteMany(context.TODO(), filter)
-	if err != nil {
-		return err
-	}
-	return nil
+func DeleteStockPriceDayByDay(t int64) error {
+	return RemoveMany(t, "stock")
 }
 
 func DeleteStockPriceDayByCode(code string) error {

@@ -2,15 +2,12 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 15:35:18
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 15:05:55
+ * @Last Modified time: 2021-08-20 17:08:22
  */
 
 package factor
 
 import (
-	"math"
-	"sync"
-
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/util"
@@ -59,19 +56,19 @@ func (f *TrendFactor) execute() error {
 	if err != nil || rps == nil {
 		return err
 	}
-	valuations, err := models.GetValuation(models.SearchOption{Timestamp: f.timestamp})
-	if err != nil {
-		return err
-	}
-	valuationMap := make(map[string]bool)
-	valuationMutex := &sync.RWMutex{}
-	for _, v := range valuations {
-		if v.MarketCap > f.market_cap {
-			valuationMap[v.Code] = true
-		} else if math.Dim(v.MarketCap, 0) > 0.1 {
-			valuationMap[v.Code] = false
-		}
-	}
+	// valuations, err := models.GetValuation(models.SearchOption{Timestamp: f.timestamp})
+	// if err != nil {
+	// 	return err
+	// }
+	// valuationMap := make(map[string]bool)
+	// valuationMutex := &sync.RWMutex{}
+	// for _, v := range valuations {
+	// 	if v.MarketCap > f.market_cap {
+	// 		valuationMap[v.Code] = true
+	// 	} else if math.Dim(v.MarketCap, 0) > 0.1 {
+	// 		valuationMap[v.Code] = false
+	// 	}
+	// }
 	queue, err := queue.NewQueue("trend", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(trendDatum)
 		code := datum.code
@@ -91,13 +88,13 @@ func (f *TrendFactor) execute() error {
 		if err != nil || vcp > f.vcp_ratio {
 			return nil, err
 		}
-		valuationMutex.RLock()
-		defer valuationMutex.RUnlock()
-		if v, ok := valuationMap[code]; ok {
-			if !v {
-				return nil, nil
-			}
-		}
+		// valuationMutex.RLock()
+		// defer valuationMutex.RUnlock()
+		// if v, ok := valuationMap[code]; ok {
+		// 	if !v {
+		// 		return nil, nil
+		// 	}
+		// }
 		return models.Vcp{
 			RpsBase: models.RpsBase{
 				Code:      code,

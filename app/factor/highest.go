@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 11:19:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 15:04:10
+ * @Last Modified time: 2021-08-20 18:10:36
  */
 
 package factor
@@ -43,7 +43,7 @@ func (f *highestFactor) Run() error {
 }
 
 func (f *highestFactor) Clean() error {
-	return models.RemoveHighest(f.timestamp)
+	return models.RemoveHighest(f.timestamp, f.isLowest)
 }
 
 func (f *highestFactor) execute() error {
@@ -54,7 +54,7 @@ func (f *highestFactor) execute() error {
 	if len(day) == 0 || day[0].Timestamp != f.timestamp {
 		return fmt.Errorf("error: highest factor task date: %s", f.calDate)
 	}
-	queue, err := queue.NewQueue("highest", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue(f.name, f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		prices, err := models.FindHighest(models.SearchOption{
 			Code:      code,

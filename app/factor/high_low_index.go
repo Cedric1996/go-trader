@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:21:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 15:04:32
+ * @Last Modified time: 2021-08-21 22:54:47
  */
 
 package factor
@@ -145,7 +145,7 @@ func (f *highLowIndexFactor) init() error {
 }
 
 func (f *highLowIndexFactor) initByCode() error {
-	queue, err := queue.NewQueue("init new_high_new_low index by code", f.calDate, 1, 1000, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue("init new_high_new_low index by code", f.calDate, 100, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		highs, err := models.GetHighest(code, f.timestamp-24*3600, 0)
 		if err != nil {
@@ -168,7 +168,7 @@ func (f *highLowIndexFactor) initByCode() error {
 		// count := len(highs)
 		prices, err := models.GetStockPriceList(models.SearchOption{
 			Code:    code,
-			EndAt:   f.timestamp - 24*3600,
+			EndAt:   f.timestamp,
 			BeginAt: min,
 		})
 		if err != nil || len(highs) != len(lows) || len(prices) != len(highs) {

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 14:31:47
+ * @Last Modified time: 2021-08-21 22:49:13
  */
 package cmd
 
@@ -35,6 +35,7 @@ var (
 			subcmdPriceInit,
 			subcmdPriceDaily,
 			subcmdHighest,
+			subcmdPriceClean,
 		},
 	}
 
@@ -60,8 +61,11 @@ var (
 		Action: runGetVcp,
 	}
 	subcmdPriceInit = cli.Command{
-		Name:   "init",
-		Usage:  "init stock price and update stock table",
+		Name:  "init",
+		Usage: "init stock price and update stock table",
+		Flags: []cli.Flag{
+			cli.StringFlag{Name: "date,d"},
+		},
 		Action: runStockPriceInit,
 	}
 
@@ -69,6 +73,14 @@ var (
 		Name:   "daily",
 		Usage:  "fetch daily stock price and update stock table",
 		Action: runStockPriceDaily,
+	}
+	subcmdPriceClean = cli.Command{
+		Name:  "clean",
+		Usage: "clean stock price and related data",
+		Flags: []cli.Flag{
+			cli.StringFlag{Name: "date,d"},
+		},
+		Action: runStockPriceClean,
 	}
 
 	subcmdHighest = cli.Command{
@@ -94,23 +106,11 @@ func runStockPriceDaily(c *cli.Context) error {
 		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
 	}
 	for _, day := range dates {
-		rps := factor.NewRpsFactor("rps", 120, 85, day)
-		if err := rps.Run(); err != nil {
+		fmt.Printf("begin init stock price by day: %s\n", day)
+		if err := service.InitStockPriceByDay(day); err != nil {
 			return err
 		}
-		highest := factor.NewHighestFactor("highest", day, 120, false)
-		if err := highest.Run(); err != nil {
-			return err
-		}
-		lowest := factor.NewHighestFactor("lowest", day, 120, true)
-		if err := lowest.Run(); err != nil {
-			return err
-		}
-		if err := service.InitFundamental(day, 1); err != nil {
-			return err
-		}
-		trend := factor.NewTrendFactor(day, 60, 0.95, 0.75, 2.0, 80)
-		if err := trend.Run(); err != nil {
+		if err := factor.InitFactorByDate(day); err != nil {
 			return err
 		}
 	}
@@ -119,13 +119,27 @@ func runStockPriceDaily(c *cli.Context) error {
 
 func runStockPriceClean(c *cli.Context) error {
 	app.Init()
+	d := c.String("date")
+	if len(d) == 0 {
+		return fmt.Errorf("please specify clean date")
+	}
+	if err := factor.CleanFactorByDate(d); err != nil {
+		return err
+	}
 	return nil
 }
 
 func runStockPriceInit(c *cli.Context) error {
 	app.Init()
-	if err := service.InitStockPrice(); err != nil {
+	d := c.String("date")
+	if len(d) == 0 {
+		return fmt.Errorf("please specify clean date")
+	}
+	if err := service.InitStockPriceByDay(d); err != nil {
 		return fmt.Errorf("execute init stock price fail, please check it: %s", err)
+	}
+	if err := factor.InitFactorByDate(d); err != nil {
+		return err
 	}
 	return nil
 }
