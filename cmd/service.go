@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-21 22:49:13
+ * @Last Modified time: 2021-08-22 12:59:42
  */
 package cmd
 
@@ -101,18 +101,21 @@ func runFetchAllSecurities(c *cli.Context) error {
 
 func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
-	dates, err := service.FetchStockPriceDayDaily()
-	if err != nil {
-		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
-	}
-	for _, day := range dates {
-		fmt.Printf("begin init stock price by day: %s\n", day)
-		if err := service.InitStockPriceByDay(day); err != nil {
-			return err
-		}
-		if err := factor.InitFactorByDate(day); err != nil {
-			return err
-		}
+	// dates, err := service.FetchStockPriceDayDaily()
+	// if err != nil {
+	// 	return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
+	// }
+	// for _, day := range dates {
+	// 	fmt.Printf("begin init stock price by day: %s\n", day)
+	// 	if err := service.InitStockPriceByDay(day); err != nil {
+	// 		return err
+	// 	}
+	// 	if err := factor.InitFactorByDate(day); err != nil {
+	// 		return err
+	// 	}
+	// }
+	if err := service.VerifyStockPriceDay(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -166,7 +169,7 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitEmaTableIndexes(); err != nil {
+	if err := models.InitStockInfoTableIndexes(); err != nil {
 		return err
 	}
 	// if err := models.InitStockTableIndexes(); err != nil {

@@ -2,13 +2,14 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 16:49:51
+ * @Last Modified time: 2021-08-22 15:17:25
  */
 
 package models
 
 import (
 	"context"
+	"fmt"
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,11 +26,9 @@ type Highest struct {
 func InitHighestTableIndexes() error {
 	indexModel := make([]mongo.IndexModel, 0)
 	indexModel = append(indexModel, mongo.IndexModel{
-		Keys: bson.D{{"timestamp", -1}},
-	}, mongo.IndexModel{
-		Keys: bson.D{{"price", -1}},
+		Keys: bson.D{{"code", -1}},
 	})
-	_, err := database.Collection("lowest").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection("highest").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}
@@ -46,6 +45,20 @@ func RemoveHighest(t int64, isLowest bool) error {
 		name = "lowest"
 	}
 	return RemoveMany(t, name)
+}
+
+func RemoveHighestByCode(code string) error {
+	filter := bson.M{"code": code}
+	h_count, err := database.Collection("highest").DeleteMany(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	l_count, err := database.Collection("lowest").DeleteMany(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("delete highest data code: %s, highest: %d, lowest: %d\n", code, h_count.DeletedCount, l_count.DeletedCount)
+	return nil
 }
 
 func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {

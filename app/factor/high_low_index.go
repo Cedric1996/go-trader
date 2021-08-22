@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:21:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-21 22:54:47
+ * @Last Modified time: 2021-08-22 14:19:32
  */
 
 package factor
@@ -145,46 +145,33 @@ func (f *highLowIndexFactor) init() error {
 }
 
 func (f *highLowIndexFactor) initByCode() error {
-	queue, err := queue.NewQueue("init new_high_new_low index by code", f.calDate, 100, 1000, func(data interface{}) (interface{}, error) {
+	queue, _ := queue.NewQueue("init new_high_new_low index by code", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
-		highs, err := models.GetHighest(code, f.timestamp-24*3600, 0)
+		highs, err := models.GetHighest(code, f.timestamp, 0)
 		if err != nil {
 			return nil, err
 		}
-		lows, err := models.GetLowest(code, f.timestamp-24*3600, 0)
+		lows, err := models.GetLowest(code, f.timestamp, 0)
 		if err != nil {
 			return nil, err
 		}
-		last_high := highs[len(highs)-1].Timestamp
-		last_low := highs[len(lows)-1].Timestamp
-		min := last_high
-		if last_high > last_low {
-			min = last_low
-		}
-		// if len(highs) != len(lows) {
-		// 	verifyDate(highs, lows)
-		// 	return nil, fmt.Errorf("high and low doesn't match, code: %s", code)
-		// }
-		// count := len(highs)
-		prices, err := models.GetStockPriceList(models.SearchOption{
-			Code:    code,
-			EndAt:   f.timestamp,
-			BeginAt: min,
-		})
-		if err != nil || len(highs) != len(lows) || len(prices) != len(highs) {
-			verifyDate(highs, lows, prices)
-			return nil, err
+		if err != nil || len(highs) != len(lows) || len(highs) == 0 {
+			// verifyDate(highs, lows, prices)
+			// fmt.Printf("verify date, code: %v\n", code)
+			if err := models.RemoveHighestByCode(code); err != nil {
+				return nil, err
+			}
+			f := NewHighestFactor("highest", f.calDate, 120, true)
+			if err := f.Init(code); err != nil {
+				return nil, err
+			}
+			return code, err
 		}
 		return nil, nil
 	}, func(data []interface{}) error {
-		// if err := models.InsertHighLowIndex(data); err != nil {
-		// 	return err
-		// }
+		fmt.Printf("initByCode: %d\n", len(data))
 		return nil
 	})
-	if err != nil {
-		return err
-	}
 	for code, _ := range service.SecuritySet {
 		queue.Push(code)
 	}

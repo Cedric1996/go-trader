@@ -2,12 +2,13 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-21 22:38:15
+ * @Last Modified time: 2021-08-22 13:32:18
  */
 package service
 
 import (
 	"fmt"
+	"time"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
@@ -71,6 +72,71 @@ func InitStockPriceByDay(date string) error {
 	if err := models.InsertTradeDay(tradeDayToInsert); err != nil {
 		return fmt.Errorf("update lastest trade day error: %s", err)
 	}
+	return nil
+}
+
+func VerifyStockPriceDay() error {
+	date := "2021-08-20"
+	queue, _ := queue.NewQueue("init", date, 20, 1000, func(data interface{}) (interface{}, error) {
+		code := data.(string)
+		// security, _ := models.GetSecurityByCode(code)
+		// t := util.ParseDate(security.StartDate).Unix()
+		// if t > 1505142000 {
+		// 	return models.ReinitStock{
+		// 		Code:      code,
+		// 		Timestamp: t,
+		// 		IsInit:    false,
+		// 	}, nil
+		// }
+		time.Sleep(10 * time.Second)
+		prices, err := GetPricesByDay(code, date, 960)
+		fmt.Printf("init stock price count: %v, code: %v\n", len(prices), code)
+		if err != nil {
+			fmt.Printf("fetch stock price error: %v\n", err)
+			return nil, err
+		}
+		res := make([]interface{}, 0)
+		for _, price := range prices {
+			res = append(res, models.StockPriceDay{
+				Code:  code,
+				Price: *price,
+			})
+		}
+		fmt.Printf("stock price day to insert, code: %v, count: %d\n", code, len(res))
+		if len(res) == 0 {
+			return nil, nil
+		}
+		if err := models.DeleteStockPriceDayByCode(code); err != nil {
+			return nil, err
+		}
+		if err := models.InsertStockPriceDay(res); err != nil {
+			return nil, err
+		}
+		if err := models.RemoveHighestByCode(code); err != nil {
+			return nil, err
+		}
+		if err := models.DeleteReinitStock(code); err != nil {
+			return nil, err
+		}
+		return true, nil
+	}, func(datas []interface{}) error {
+		// if err := models.InsertReinitStockInfo(datas); err != nil {
+		// 	return err
+		// }
+		return nil
+	})
+	stocks, err := models.GetReinitStock()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("reinit stock count: %d\n", len(stocks))
+	for _, stock := range stocks {
+		queue.Push(stock.Code)
+	}
+	// for code, _ := range SecuritySet {
+	// 	queue.Push(code)
+	// }
+	queue.Close()
 	return nil
 }
 

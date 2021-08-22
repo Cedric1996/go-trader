@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 13:06:22
+ * @Last Modified time: 2021-08-22 15:17:20
  */
 
 package fetcher
@@ -18,8 +18,10 @@ var (
 func GetCurrentToken(c *ctx.Context) error {
 	params := map[string]interface{}{
 		"method": "get_token",
-		"mob":    "18851280888",
-		"pwd":    "ZJjc961031",
+		// "mob":    "18851280888",
+		// "pwd":    "ZJjc961031",
+		"mob": "13023109456",
+		"pwd": "pPgRjRmh9yH@W5H",
 	}
 	c.Params = params
 	return fetchData(c, "get current token")

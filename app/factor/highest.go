@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 11:19:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 18:10:36
+ * @Last Modified time: 2021-08-21 23:41:39
  */
 
 package factor
@@ -37,6 +37,48 @@ func NewHighestFactor(name string, calDate string, period int64, isLowest bool) 
 
 func (f *highestFactor) Run() error {
 	if err := f.execute(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *highestFactor) Init(code string) error {
+	prices, err := models.GetStockPriceList(models.SearchOption{
+		Code:     code,
+		Reversed: true,
+	})
+	if err != nil {
+		return err
+	}
+	period := int(f.period)
+	calMaxAndMin := func(prices []*models.StockPriceDay) (max, min float64) {
+		min = math.Inf(1)
+		max = 0.0
+		for _, p := range prices {
+			min = math.Min(p.Close, min)
+			max = math.Max(p.High, max)
+		}
+		return max, min
+	}
+	highest := []interface{}{}
+	lowest := []interface{}{}
+	for i := 0; i < len(prices)-period; i++ {
+		max, min := calMaxAndMin(prices[i : i+period])
+		highest = append(highest, models.Highest{
+			Code:      code,
+			Price:     max,
+			Timestamp: prices[i+period-1].Timestamp,
+		})
+		lowest = append(lowest, models.Highest{
+			Code:      code,
+			Price:     min,
+			Timestamp: prices[i+period-1].Timestamp,
+		})
+	}
+	if err := models.InsertHighest(highest, "highest"); err != nil {
+		return err
+	}
+	if err := models.InsertHighest(lowest, "lowest"); err != nil {
 		return err
 	}
 	return nil
