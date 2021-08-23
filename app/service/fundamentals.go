@@ -14,7 +14,6 @@ import (
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
-	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/util"
 )
 
@@ -76,7 +75,7 @@ func parseValuation(c *ctx.Context) ([]interface{}, error) {
 	return res, nil
 }
 
-func initFundamental(code, date string, count int) ([]interface{}, error) {
+func InitFundamental(code, date string, count int) ([]interface{}, error) {
 	c := &ctx.Context{}
 	if err := fetcher.GetFundamentals(c, fetcher.Valuation, code, date, count); err != nil {
 		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
@@ -89,41 +88,5 @@ func initFundamental(code, date string, count int) ([]interface{}, error) {
 	if len(datas) == 0 {
 		return nil, errors.New("fetch no fundamental data")
 	}
-	res := make([]interface{}, 0)
-	for i := 0; i < len(datas)/5; i++ {
-		res = append(res, datas[i*5])
-	}
-	return res, nil
-}
-
-func InitFundamental(date string, count int) error {
-	initFundamentalQueue, err := queue.NewQueue("init_fundamental", date, 50, 10, func(data interface{}) (interface{}, error) {
-		code := data.(string)
-		datas, err := initFundamental(code, date, count)
-		if err != nil {
-			return nil, err
-		}
-		return datas, nil
-	}, func(datas []interface{}) error {
-		insertData := []interface{}{}
-		for _, v := range datas {
-			arr := v.([]interface{})
-			insertData = append(insertData, arr...)
-		}
-		if len(insertData) == 0 {
-			return nil
-		}
-		if err := models.InsertFundamental(insertData, string(fetcher.Valuation)); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	for i, _ := range SecuritySet {
-		initFundamentalQueue.Push(i)
-	}
-	initFundamentalQueue.Close()
-	return nil
+	return datas, nil
 }

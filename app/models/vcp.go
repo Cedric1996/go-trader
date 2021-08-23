@@ -93,8 +93,8 @@ func GetVcpByDate(t int64) ([]*Vcp, error) {
 	return results, nil
 }
 
-func GetNewVcpByDate(t int64) ([]*Vcp, error) {
-	oldVcps, err := GetVcpByDate(t - 3600*24)
+func GetNewVcpByDate(t1, t2 int64) ([]*Vcp, error) {
+	oldVcps, err := GetVcpByDate(t2)
 	if err != nil {
 		return nil, err
 	}
@@ -102,19 +102,18 @@ func GetNewVcpByDate(t int64) ([]*Vcp, error) {
 	for _, v := range oldVcps {
 		vcpMap[v.RpsBase.Code] = v
 	}
-	newVcps, err := GetVcpByDate(t)
+	newVcps, err := GetVcpByDate(t1)
 	if err != nil {
 		return nil, err
 	}
-	// results := make([]*Vcp, 0)
-	// for _, v := range newVcps {
-	// 	if _, ok := vcpMap[v.RpsBase.Code]; ok {
-	// 		results = append(results, v)
-	// 	}
-	// }
-	// return results, nil
-	return newVcps, nil
-
+	results := make([]*Vcp, 0)
+	for _, v := range newVcps {
+		if _, ok := vcpMap[v.RpsBase.Code]; !ok {
+			results = append(results, v)
+		}
+	}
+	return results, nil
+	// return newVcps, nil
 }
 
 func (v *Vcp) String() string {

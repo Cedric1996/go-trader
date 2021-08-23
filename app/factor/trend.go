@@ -2,14 +2,18 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 15:35:18
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 17:08:22
+ * @Last Modified time: 2021-08-23 23:47:51
  */
 
 package factor
 
 import (
+	"fmt"
+	"math"
+
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
+	"github.cedric1996.com/go-trader/app/service"
 	"github.cedric1996.com/go-trader/app/util"
 )
 
@@ -19,7 +23,6 @@ type TrendFactor struct {
 	period        int64   `bson:"period, omitempty"`
 	highest_ratio float64 `bson:"highest_ratio, omitempty"`
 	vcp_ratio     float64 `bson:"vcp_ratio, omitempty"`
-	market_cap    float64 `bson:"market_cap, omitempty"`
 	volume        float64 `bson:"volume, omitempty"`
 }
 
@@ -28,14 +31,13 @@ type trendDatum struct {
 	rps  int64
 }
 
-func NewTrendFactor(calDate string, period int64, highest_ratio, vcp_ratio, volume, marketCap float64) *TrendFactor {
+func NewTrendFactor(calDate string, period int64, highest_ratio, vcp_ratio, volume float64) *TrendFactor {
 	return &TrendFactor{
 		calDate:       calDate,
 		period:        period,
 		highest_ratio: highest_ratio,
 		vcp_ratio:     vcp_ratio,
 		volume:        volume,
-		market_cap:    marketCap,
 		timestamp:     util.ParseDate(calDate).Unix(),
 	}
 }
@@ -56,19 +58,6 @@ func (f *TrendFactor) execute() error {
 	if err != nil || rps == nil {
 		return err
 	}
-	// valuations, err := models.GetValuation(models.SearchOption{Timestamp: f.timestamp})
-	// if err != nil {
-	// 	return err
-	// }
-	// valuationMap := make(map[string]bool)
-	// valuationMutex := &sync.RWMutex{}
-	// for _, v := range valuations {
-	// 	if v.MarketCap > f.market_cap {
-	// 		valuationMap[v.Code] = true
-	// 	} else if math.Dim(v.MarketCap, 0) > 0.1 {
-	// 		valuationMap[v.Code] = false
-	// 	}
-	// }
 	queue, err := queue.NewQueue("trend", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(trendDatum)
 		code := datum.code
@@ -88,13 +77,9 @@ func (f *TrendFactor) execute() error {
 		if err != nil || vcp > f.vcp_ratio {
 			return nil, err
 		}
-		// valuationMutex.RLock()
-		// defer valuationMutex.RUnlock()
-		// if v, ok := valuationMap[code]; ok {
-		// 	if !v {
-		// 		return nil, nil
-		// 	}
-		// }
+		if err := f.valuationFilter(code, 80); err != nil {
+			return nil, err
+		}
 		return models.Vcp{
 			RpsBase: models.RpsBase{
 				Code:      code,
@@ -122,5 +107,20 @@ func (f *TrendFactor) execute() error {
 		})
 	}
 	queue.Close()
+	return nil
+}
+
+func (f *TrendFactor) valuationFilter(code string, marketCap float64) error {
+	datas, err := service.InitFundamental(code, f.calDate, 1)
+	if err != nil {
+		return err
+	}
+	if len(datas) != 1 {
+		return fmt.Errorf("fetch valuation error, code: %v", code)
+	}
+	val := datas[0].(models.Valuation).MarketCap
+	if math.Dim(val, marketCap) == 0 {
+		return fmt.Errorf("marketCap is less than %v, code: %v", marketCap, code)
+	}
 	return nil
 }

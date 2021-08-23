@@ -32,7 +32,6 @@ func main() {
 		cmd.CmdTest,
 		cmd.CmdServer,
 		cmd.CmdFetch,
-		cmd.CmdFundamental,
 		cmd.CmdCount,
 		cmd.CmdSecurity,
 		cmd.CmdIndex,

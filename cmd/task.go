@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-21 22:55:14
+ * @Last Modified time: 2021-08-24 00:11:17
  */
 
 package cmd
@@ -32,6 +32,7 @@ var (
 			subCmdTaskTrend,
 			subCmdTaskEma,
 			subCmdTaskHighLowIndex,
+			subCmdTaskTrueRange,
 		},
 	}
 
@@ -76,12 +77,18 @@ var (
 		Usage:  "new high new low index",
 		Action: runHighLowIndexFactor,
 	}
+
+	subCmdTaskTrueRange = cli.Command{
+		Name:   "tr",
+		Usage:  "true range and average true range",
+		Action: runTrueRangeFactor,
+	}
 )
 
 func runRpsFactor(c *cli.Context) error {
 	app.Init()
-	t := util.ParseDate("2020-03-18").Unix()
-	tradeDays, err := models.GetTradeDay(true, 200, t)
+	t := util.ParseDate("2020-06-01").Unix()
+	tradeDays, err := models.GetTradeDay(true, 300, t)
 	if err != nil {
 		return err
 	}
@@ -124,24 +131,32 @@ func runGetRps(c *cli.Context) error {
 
 func runHighestFactor(c *cli.Context) error {
 	app.Init()
-	t := util.ParseDate("2021-08-17").Unix()
-	tradeDays, err := models.GetTradeDay(true, 4, t)
-	if err != nil {
-		return err
-	}
-	taskQueue := queue.NewTaskQueue("highest", 4, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("highest", 50, func(data interface{}) error {
 		date := data.(string)
-		f := factor.NewHighestFactor("highest", date, 120, true)
-		if err := f.Run(); err != nil {
+		// rps := factor.NewRpsFactor("rps", 120, 85, date)
+		// if err := rps.Run(); err != nil {
+		// 	return err
+		// }
+		// ema := factor.NewEmaFactor(date, 1)
+		// if err := ema.Run(); err != nil {
+		// 	return err
+		// }
+		vcp := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0)
+		if err := vcp.Run(); err != nil {
 			return err
 		}
-		fmt.Printf("highest task has been done, date: %s\n", date)
+		fmt.Printf("rps task has been done, date: %s\n", date)
 		return nil
 	}, func(dateChan *chan interface{}) {
-		for _, day := range tradeDays {
-			*dateChan <- day.Date
+		t := util.ParseDate("2020-06-01").Unix()
+		// t := util.ParseDate("2021-08-23").Unix()
+		tradeDays, err := models.GetTradeDay(true, 1, t)
+		if err != nil {
+			return
 		}
-		fmt.Printf("highest task count: %d\n", len(tradeDays))
+		for _, date := range tradeDays {
+			*dateChan <- date.Date
+		}
 	})
 	if err := taskQueue.Run(); err != nil {
 		return err
@@ -172,13 +187,13 @@ func runTrendFactor(c *cli.Context) error {
 	app.Init()
 	taskQueue := queue.NewTaskQueue("trend", 50, func(data interface{}) error {
 		date := data.(string)
-		f := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0, 80)
+		f := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0)
 		if err := f.Run(); err != nil {
 			return err
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2021-08-15").Unix()
+		t := util.ParseDate("2020-06-01").Unix()
 		tradeDays, err := models.GetTradeDay(true, 300, t)
 		if err != nil {
 			return
@@ -203,8 +218,8 @@ func runEmaFactor(c *cli.Context) error {
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2021-08-17").Unix()
-		tradeDays, err := models.GetTradeDay(true, 800, t)
+		t := util.ParseDate("2021-08-23").Unix()
+		tradeDays, err := models.GetTradeDay(true, 0, t)
 		if err != nil {
 			return
 		}
@@ -220,8 +235,17 @@ func runEmaFactor(c *cli.Context) error {
 
 func runHighLowIndexFactor(c *cli.Context) error {
 	app.Init()
-	f := factor.NewHighLowIndexFactor("nh_nw", "2021-08-20", true)
+	f := factor.NewHighLowIndexFactor("nh_nw", "2020-06-01")
 	if err := f.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runTrueRangeFactor(c *cli.Context) error {
+	app.Init()
+	f := factor.NewTrueRangeFactor("2021-08-23", 13)
+	if err := f.InitByCode(); err != nil {
 		return err
 	}
 	return nil

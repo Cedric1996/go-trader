@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-04 15:11:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-18 20:22:32
+ * @Last Modified time: 2021-08-23 11:20:29
  */
 
 package queue
@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 )
 
 // Data defines an type of queuable data
@@ -42,6 +43,7 @@ type ChannelQueue struct {
 	handleFunc  HandleFunc
 	finishNum   int
 	date        string
+	timer       time.Time
 }
 
 // NewQueue takes a queue Type, ExecuteFunc, some options and possibly an exemplar and returns a Queue or an error
@@ -68,6 +70,7 @@ func (q *ChannelQueue) Push(data Data) {
 
 // Run starts to run the queue
 func (q *ChannelQueue) Run() {
+	q.timer = time.Now()
 	fmt.Printf("ChannelQueue: %s Starting:\n", q.name)
 	go q.handle()
 	for i := 0; i < q.workerNum; i++ {
@@ -88,6 +91,7 @@ func (q *ChannelQueue) Close() {
 		}
 	}
 	fmt.Printf("ChannelQueue: %s execute %d tasks, date: %s\n", q.name, q.finishNum, q.date)
+	fmt.Printf("Total time: %s\n", time.Since(q.timer).String())
 }
 
 // Execute starts worker to execute task

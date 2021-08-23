@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:21:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-22 14:19:32
+ * @Last Modified time: 2021-08-23 23:43:45
  */
 
 package factor
@@ -26,22 +26,17 @@ type highLowIndexFactor struct {
 	name      string
 	calDate   string
 	timestamp int64
-	isInit    bool
 }
 
-func NewHighLowIndexFactor(name, calDate string, isInit bool) *highLowIndexFactor {
+func NewHighLowIndexFactor(name, calDate string) *highLowIndexFactor {
 	return &highLowIndexFactor{
 		name:      name,
 		calDate:   calDate,
 		timestamp: util.ParseDate(calDate).Unix(),
-		isInit:    isInit,
 	}
 }
 
 func (f *highLowIndexFactor) Run() error {
-	if f.isInit {
-		return f.initByCode()
-	}
 	return f.execute()
 }
 
@@ -50,95 +45,75 @@ func (f *highLowIndexFactor) Clean() error {
 }
 
 func (f *highLowIndexFactor) execute() error {
-	date, err := models.GetTradeDay(true, 1, f.timestamp)
+	dates, err := models.GetTradeDay(true, 2, f.timestamp)
 	if err != nil {
 		return err
 	}
-	if len(date) == 0 || date[0].Timestamp != f.timestamp {
-		return fmt.Errorf("error: highest factor task date: %s", f.calDate)
-	}
-	queue, err := queue.NewQueue("high_low_index", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
-		code := data.(string)
-		high, err := models.GetHighest(code, f.timestamp-24*3600, 1)
+	queue, _ := queue.NewQueue("init new_high_new_low index", f.calDate, 50, 200, func(data interface{}) (interface{}, error) {
+		dates := data.([]*models.TradeDay)
+		t1 := util.ParseDate(dates[0].Date).Unix()
+		t2 := util.ParseDate(dates[1].Date).Unix()
+		highs, err := models.GetHighestList(models.SearchOption{
+			BeginAt: t2,
+			EndAt:   t1,
+			SortBy:  "code",
+		}, "highest")
 		if err != nil {
 			return nil, err
 		}
-		low, err := models.GetLowest(code, f.timestamp-24*3600, 1)
+		lows, err := models.GetHighestList(models.SearchOption{
+			BeginAt: t2,
+			EndAt:   t1,
+			SortBy:  "code",
+		}, "lowest")
 		if err != nil {
+			return nil, err
+		}
+		if len(lows) <= 1 || len(highs) <= 1 {
+			return nil, nil
+		}
+		if len(lows) != len(highs) {
+			fmt.Printf("cal nh_nl error, code: %s, high: %d, low: %d\n", lows[0].Code, len(highs), len(lows))
 			return nil, err
 		}
 
-		prices, err := models.GetStockPriceList(models.SearchOption{
-			Code:      code,
-			Timestamp: f.timestamp,
-			Limit:     1,
-		})
-		if err != nil || len(prices) == 0 {
-			return nil, err
+		newHigh, newLow := 0, 0
+		for i := 0; i < len(highs)-1; i++ {
+			if highs[i].Code == highs[i+1].Code {
+				if highs[i].Price > highs[i+1].Price {
+					newHigh++
+					i++
+					continue
+				}
+			} else {
+				continue
+			}
+			if lows[i].Code == lows[i+1].Code {
+				if lows[i].Price < lows[i+1].Price {
+					newLow++
+					i++
+					continue
+				}
+			} else {
+				continue
+			}
+			i++
 		}
-		switch {
-		case high[0].Price < prices[0].Close:
-			return NewHigh, nil
-		case low[0].Price > prices[0].Close:
-			return NewLow, nil
-		default:
-			return NormalPrice, nil
-		}
+		return models.HighLowIndex{
+			Date:      dates[0].Date,
+			Timestamp: t1,
+			High:      newHigh,
+			Low:       newLow,
+			Index:     newHigh - newLow,
+		}, nil
 	}, func(data []interface{}) error {
 		if err := models.InsertHighLowIndex(data); err != nil {
 			return err
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	for code, _ := range service.SecuritySet {
-		queue.Push(code)
-	}
-	queue.Close()
-	return nil
-}
-
-func (f *highLowIndexFactor) init() error {
-	queue, err := queue.NewQueue("init new_high_new_low index", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
-		code := data.(string)
-		high, err := models.GetHighest(code, f.timestamp-24*3600, 1)
-		if err != nil {
-			return nil, err
-		}
-		low, err := models.GetLowest(code, f.timestamp-24*3600, 1)
-		if err != nil {
-			return nil, err
-		}
-
-		prices, err := models.GetStockPriceList(models.SearchOption{
-			Code:      code,
-			Timestamp: f.timestamp,
-			Limit:     1,
-		})
-		if err != nil || len(prices) == 0 {
-			return nil, err
-		}
-		switch {
-		case high[0].Price < prices[0].Close:
-			return NewHigh, nil
-		case low[0].Price > prices[0].Close:
-			return NewLow, nil
-		default:
-			return NormalPrice, nil
-		}
-	}, func(data []interface{}) error {
-		if err := models.InsertHighLowIndex(data); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	for code, _ := range service.SecuritySet {
-		queue.Push(code)
+	for i := 0; i < len(dates)-1; i++ {
+		queue.Push([]*models.TradeDay{dates[i], dates[i+1]})
 	}
 	queue.Close()
 	return nil
@@ -155,13 +130,13 @@ func (f *highLowIndexFactor) initByCode() error {
 		if err != nil {
 			return nil, err
 		}
-		if err != nil || len(highs) != len(lows) || len(highs) == 0 {
+		if err != nil || len(highs) != len(lows) || len(highs) == 0 || len(lows) == 0 {
 			// verifyDate(highs, lows, prices)
 			// fmt.Printf("verify date, code: %v\n", code)
 			if err := models.RemoveHighestByCode(code); err != nil {
 				return nil, err
 			}
-			f := NewHighestFactor("highest", f.calDate, 120, true)
+			f := NewHighestFactor("highest", f.calDate, 120)
 			if err := f.Init(code); err != nil {
 				return nil, err
 			}

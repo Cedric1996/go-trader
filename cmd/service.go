@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-22 12:59:42
+ * @Last Modified time: 2021-08-23 23:56:35
  */
 package cmd
 
@@ -37,12 +37,6 @@ var (
 			subcmdHighest,
 			subcmdPriceClean,
 		},
-	}
-
-	CmdFundamental = cli.Command{
-		Name:   "fundamental",
-		Usage:  "fetchfundamental data",
-		Action: runFundamentalInit,
 	}
 
 	CmdSecurity = cli.Command{
@@ -101,22 +95,22 @@ func runFetchAllSecurities(c *cli.Context) error {
 
 func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
-	// dates, err := service.FetchStockPriceDayDaily()
-	// if err != nil {
-	// 	return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
-	// }
-	// for _, day := range dates {
-	// 	fmt.Printf("begin init stock price by day: %s\n", day)
-	// 	if err := service.InitStockPriceByDay(day); err != nil {
-	// 		return err
-	// 	}
-	// 	if err := factor.InitFactorByDate(day); err != nil {
-	// 		return err
-	// 	}
-	// }
-	if err := service.VerifyStockPriceDay(); err != nil {
-		return err
+	dates, err := service.FetchStockPriceDayDaily()
+	if err != nil {
+		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
 	}
+	for _, day := range dates {
+		fmt.Printf("begin init stock price by day: %s\n", day)
+		if err := service.InitStockPriceByDay(day); err != nil {
+			return err
+		}
+		if err := factor.InitFactorByDate(day); err != nil {
+			return err
+		}
+	}
+	// if err := service.VerifyStockPriceDay(); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -147,18 +141,6 @@ func runStockPriceInit(c *cli.Context) error {
 	return nil
 }
 
-func runFundamentalInit(c *cli.Context) error {
-	app.Init()
-	tradeDay, err := models.GetTradeDay(true, 0, util.ParseDate("2020-07-12").Unix())
-	if err != nil || len(tradeDay) == 0 {
-		return err
-	}
-	if err := service.InitFundamental("2020-07-12", len(tradeDay)); err != nil {
-		return err
-	}
-	return nil
-}
-
 func runCount(c *cli.Context) error {
 	app.Init()
 	if err := service.GetQueryCount(); err != nil {
@@ -169,22 +151,28 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitStockInfoTableIndexes(); err != nil {
+	if err := models.InitRpsTableIndexes(); err != nil {
 		return err
 	}
-	// if err := models.InitStockTableIndexes(); err != nil {
-	// 	return err
-	// }
+	if err := models.InitRpsIncreaseTableIndexes(); err != nil {
+		return err
+	}
+	if err := models.InitEmaTableIndexes(); err != nil {
+		return err
+	}
+	if err := models.InitVcpTableIndexes(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func runGetVcp(c *cli.Context) error {
 	app.Init()
-	tradeDay, err := models.GetTradeDay(true, 1, util.TodayUnix())
-	if err != nil || len(tradeDay) == 0 {
+	tradeDay, err := models.GetTradeDay(true, 2, util.TodayUnix())
+	if err != nil || len(tradeDay) != 2 {
 		return nil
 	}
-	vcps, err := models.GetNewVcpByDate(tradeDay[0].Timestamp)
+	vcps, err := models.GetNewVcpByDate(tradeDay[0].Timestamp, tradeDay[1].Timestamp)
 	if err != nil {
 		return err
 	}
@@ -208,16 +196,11 @@ func runGetVcp(c *cli.Context) error {
 	if err := ioutil.WriteFile(".result/result.json", data, os.ModePerm); err != nil {
 		return err
 	}
-	// for _, vcp := range vcps {
-	// 	fmt.Println(vcp.RpsBase.Code)
-	// }
-
 	return nil
 }
 
 func runGetHighest(c *cli.Context) error {
 	app.Init()
-	// init highest/lowest after 2018-03-12
 	highest, _ := models.GetHighestList(models.SearchOption{Reversed: true, Limit: 1}, "highest")
 	lowest, _ := models.GetHighestList(models.SearchOption{Reversed: true, Limit: 1}, "lowest")
 	valuation, _ := models.GetValuation(models.SearchOption{Reversed: true, Limit: 1})

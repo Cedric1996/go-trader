@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-05 14:10:35
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 18:10:23
+ * @Last Modified time: 2021-08-24 00:00:12
  */
 
 package factor
@@ -36,11 +36,11 @@ func CleanFactorByDate(date string) error {
 	}
 	factors := []Factor{
 		NewEmaFactor(date, 1),
-		NewHighLowIndexFactor("nh_nl", date, false),
-		NewHighestFactor("highest", date, 120, true),
-		NewHighestFactor("lowest", date, 120, false),
+		NewHighLowIndexFactor("nh_nl", date),
+		NewHighestFactor("highest", date, 120),
+		NewHighestFactor("lowest", date, 120),
 		NewRpsFactor("rps", 120, 0, date),
-		NewTrendFactor(date, 0, 0, 0, 0, 0),
+		NewTrendFactor(date, 0, 0, 0, 0),
 	}
 	for _, f := range factors {
 		if err := f.Clean(); err != nil {
@@ -53,11 +53,11 @@ func CleanFactorByDate(date string) error {
 func InitFactorByDate(date string) error {
 	factors := []Factor{
 		NewEmaFactor(date, 1),
-		NewHighestFactor("highest", date, 120, true),
-		NewHighestFactor("lowest", date, 120, false),
-		// NewHighLowIndexFactor("nh_nl", date, false),
+		NewHighestFactor("highest", date, 120),
+		NewHighLowIndexFactor("nh_nl", date),
 		NewRpsFactor("rps", 120, 85, date),
-		NewTrendFactor(date, 60, 0.95, 0.75, 2.0, 80),
+		NewHighLowIndexFactor("nh_nl", date),
+		NewTrendFactor(date, 60, 0.95, 0.75, 2.0),
 	}
 	for _, f := range factors {
 		if err := f.Run(); err != nil {

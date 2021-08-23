@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-22 15:17:25
+ * @Last Modified time: 2021-08-23 21:18:34
  */
 
 package models
@@ -27,8 +27,16 @@ func InitHighestTableIndexes() error {
 	indexModel := make([]mongo.IndexModel, 0)
 	indexModel = append(indexModel, mongo.IndexModel{
 		Keys: bson.D{{"code", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"price", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"timestamp", -1}},
 	})
 	_, err := database.Collection("highest").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	if err != nil {
+		return err
+	}
+	_, err = database.Collection("lowest").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}
@@ -39,12 +47,12 @@ func InsertHighest(datas []interface{}, name string) error {
 	return InsertMany(datas, name)
 }
 
-func RemoveHighest(t int64, isLowest bool) error {
-	name := "highest"
-	if isLowest {
-		name = "lowest"
+func RemoveHighest(t int64) (err error) {
+	err = RemoveMany(t, "highest")
+	if err == nil {
+		err = RemoveMany(t, "lowest")
 	}
-	return RemoveMany(t, name)
+	return err
 }
 
 func RemoveHighestByCode(code string) error {
@@ -102,11 +110,16 @@ func GetLowest(code string, t, count int64) ([]*Highest, error) {
 }
 
 func GetHighestList(opt SearchOption, name string) ([]*Highest, error) {
-	sortBy := -1
+	reversed := -1
+	sort := bson.D{}
 	if opt.Reversed {
-		sortBy = 1
+		reversed = 1
 	}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit)
+	if len(opt.SortBy) != 0 {
+		sort = append(sort, bson.E{opt.SortBy, -1})
+	}
+	sort = append(sort, bson.E{"timestamp", reversed})
+	findOptions := options.Find().SetSort(sort).SetLimit(opt.Limit)
 	var results []*Highest
 	queryBson := bson.D{}
 	if len(opt.Code) > 0 {

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 11:19:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-21 23:41:39
+ * @Last Modified time: 2021-08-23 23:59:27
  */
 
 package factor
@@ -21,16 +21,19 @@ type highestFactor struct {
 	name      string
 	calDate   string
 	period    int64
-	isLowest  bool
 	timestamp int64
 }
 
-func NewHighestFactor(name string, calDate string, period int64, isLowest bool) *highestFactor {
+type highestDatum struct {
+	High models.Highest
+	Low  models.Highest
+}
+
+func NewHighestFactor(name string, calDate string, period int64) *highestFactor {
 	return &highestFactor{
 		name:      name,
 		calDate:   calDate,
 		period:    period,
-		isLowest:  isLowest,
 		timestamp: util.ParseDate(calDate).Unix(),
 	}
 }
@@ -56,7 +59,7 @@ func (f *highestFactor) Init(code string) error {
 		max = 0.0
 		for _, p := range prices {
 			min = math.Min(p.Close, min)
-			max = math.Max(p.High, max)
+			max = math.Max(p.Close, max)
 		}
 		return max, min
 	}
@@ -85,7 +88,7 @@ func (f *highestFactor) Init(code string) error {
 }
 
 func (f *highestFactor) Clean() error {
-	return models.RemoveHighest(f.timestamp, f.isLowest)
+	return models.RemoveHighest(f.timestamp)
 }
 
 func (f *highestFactor) execute() error {
@@ -96,7 +99,7 @@ func (f *highestFactor) execute() error {
 	if len(day) == 0 || day[0].Timestamp != f.timestamp {
 		return fmt.Errorf("error: highest factor task date: %s", f.calDate)
 	}
-	queue, err := queue.NewQueue(f.name, f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue(f.name, f.calDate, 100, 200, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		prices, err := models.FindHighest(models.SearchOption{
 			Code:      code,
@@ -107,32 +110,38 @@ func (f *highestFactor) execute() error {
 			return nil, err
 		}
 
-		calMaxOrMin := func() float64 {
-			if f.isLowest {
-				min := math.Inf(1)
-				for _, p := range prices {
-					min = math.Min(p.Close, min)
-				}
-				return min
-			} else {
-				max := 0.0
-				for _, p := range prices {
-					max = math.Max(p.High, max)
-				}
-				return max
+		calMaxAndMin := func() (float64, float64) {
+			min := math.Inf(1)
+			max := 0.0
+			for _, p := range prices {
+				min = math.Min(p.Close, min)
+				max = math.Max(p.Close, max)
 			}
+			return max, min
 		}
-		return models.Highest{
-			Code:      prices[0].Code,
-			Price:     calMaxOrMin(),
-			Timestamp: prices[0].Timestamp,
+		max, min := calMaxAndMin()
+		return highestDatum{
+			High: models.Highest{
+				Code:      prices[0].Code,
+				Price:     max,
+				Timestamp: prices[0].Timestamp},
+			Low: models.Highest{
+				Code:      prices[0].Code,
+				Price:     min,
+				Timestamp: prices[0].Timestamp},
 		}, nil
 	}, func(data []interface{}) error {
-		name := "highest"
-		if f.isLowest {
-			name = "lowest"
+		highs := make([]interface{}, len(data))
+		lows := make([]interface{}, len(data))
+		for i, d := range data {
+			datum := d.(highestDatum)
+			highs[i] = datum.High
+			lows[i] = datum.Low
 		}
-		if err := models.InsertHighest(data, name); err != nil {
+		if err := models.InsertHighest(highs, "highest"); err != nil {
+			return err
+		}
+		if err := models.InsertHighest(lows, "lowest"); err != nil {
 			return err
 		}
 		return nil
@@ -140,6 +149,38 @@ func (f *highestFactor) execute() error {
 	if err != nil {
 		return err
 	}
+	for code, _ := range service.SecuritySet {
+		queue.Push(code)
+	}
+	queue.Close()
+	return nil
+}
+
+func (f *highestFactor) initByCode() error {
+	queue, _ := queue.NewQueue("init highest data by code", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
+		code := data.(string)
+		highs, err := models.GetHighest(code, f.timestamp, 0)
+		if err != nil {
+			return nil, err
+		}
+		lows, err := models.GetLowest(code, f.timestamp, 0)
+		if err != nil {
+			return nil, err
+		}
+		if err != nil || len(highs) != len(lows) || len(highs) == 0 || len(lows) == 0 {
+			if err := models.RemoveHighestByCode(code); err != nil {
+				return nil, err
+			}
+			if err := f.Init(code); err != nil {
+				return nil, err
+			}
+			return code, err
+		}
+		return nil, nil
+	}, func(data []interface{}) error {
+		fmt.Printf("init highest by code: %d\n", len(data))
+		return nil
+	})
 	for code, _ := range service.SecuritySet {
 		queue.Push(code)
 	}
