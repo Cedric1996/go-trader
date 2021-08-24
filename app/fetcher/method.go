@@ -8,6 +8,8 @@
 package fetcher
 
 import (
+	"os"
+
 	ctx "github.cedric1996.com/go-trader/app/context"
 )
 
@@ -16,12 +18,12 @@ var (
 )
 
 func GetCurrentToken(c *ctx.Context) error {
+	Mob := os.Getenv("TRADER_MOB")
+	Pwd := os.Getenv("TRADER_PWD")
 	params := map[string]interface{}{
 		"method": "get_token",
-		"mob":    "18851280888",
-		"pwd":    "ZJjc961031",
-		// "mob": "13023109456",
-		// "pwd": "pPgRjRmh9yH@W5H",
+		"mob":    Mob,
+		"pwd":    Pwd,
 	}
 	c.Params = params
 	return fetchData(c, "get current token")

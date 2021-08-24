@@ -169,7 +169,7 @@ func runInitIndex(c *cli.Context) error {
 func runGetVcp(c *cli.Context) error {
 	app.Init()
 	tradeDay, err := models.GetTradeDay(true, 2, util.TodayUnix())
-	if err != nil || len(tradeDay) != 2 {
+	if err != nil || len(tradeDay) == 2 {
 		return nil
 	}
 	vcps, err := models.GetNewVcpByDate(tradeDay[0].Timestamp, tradeDay[1].Timestamp)
