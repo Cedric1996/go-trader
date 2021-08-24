@@ -5,6 +5,7 @@
 /go-trader
 /bin
 /dist
+/docs
 .DS_Store
 
 *.xmind

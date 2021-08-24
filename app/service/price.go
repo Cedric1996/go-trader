@@ -38,6 +38,7 @@ func GetPricesByDay(code, date string, count int) ([]*models.Price, error) {
  * Stock table
  */
 func InitStockPriceByDay(date string) error {
+	isInit := false
 	initStockQueue, err := queue.NewQueue("init", date, 200, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		stocks, err := GetPricesByDay(code, date, 1)
@@ -55,6 +56,7 @@ func InitStockPriceByDay(date string) error {
 		if err := models.InsertStockPriceDay(datas); err != nil {
 			return err
 		}
+		isInit = true
 		return nil
 	})
 	if err != nil {
@@ -67,7 +69,7 @@ func InitStockPriceByDay(date string) error {
 	tradeDayToInsert := []interface{}{models.TradeDay{
 		Date:      date,
 		Timestamp: util.ToTimeStamp(date),
-		IsInit:    true,
+		IsInit:    isInit,
 	}}
 	if err := models.InsertTradeDay(tradeDayToInsert); err != nil {
 		return fmt.Errorf("update lastest trade day error: %s", err)

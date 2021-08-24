@@ -104,6 +104,11 @@ func runStockPriceDaily(c *cli.Context) error {
 		if err := service.InitStockPriceByDay(day); err != nil {
 			return err
 		}
+		t := util.ParseDate(day).Unix()
+		dates, err := models.GetTradeDay(true, 1, t)
+		if err != nil || len(dates) == 0 || dates[0].Timestamp != t {
+			return fmt.Errorf("parse date error: invalid trade date %s", day)
+		}
 		if err := factor.InitFactorByDate(day); err != nil {
 			return err
 		}
@@ -151,25 +156,25 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitRpsTableIndexes(); err != nil {
+	if err := models.InitTrueRangeTableIndexes(); err != nil {
 		return err
 	}
-	if err := models.InitRpsIncreaseTableIndexes(); err != nil {
-		return err
-	}
-	if err := models.InitEmaTableIndexes(); err != nil {
-		return err
-	}
-	if err := models.InitVcpTableIndexes(); err != nil {
-		return err
-	}
+	// if err := models.InitRpsIncreaseTableIndexes(); err != nil {
+	// 	return err
+	// }
+	// if err := models.InitEmaTableIndexes(); err != nil {
+	// 	return err
+	// }
+	// if err := models.InitVcpTableIndexes(); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
 func runGetVcp(c *cli.Context) error {
 	app.Init()
 	tradeDay, err := models.GetTradeDay(true, 2, util.TodayUnix())
-	if err != nil || len(tradeDay) == 2 {
+	if err != nil || len(tradeDay) != 2 {
 		return nil
 	}
 	vcps, err := models.GetNewVcpByDate(tradeDay[0].Timestamp, tradeDay[1].Timestamp)

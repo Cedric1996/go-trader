@@ -244,7 +244,7 @@ func runHighLowIndexFactor(c *cli.Context) error {
 
 func runTrueRangeFactor(c *cli.Context) error {
 	app.Init()
-	f := factor.NewTrueRangeFactor("2021-08-23", 13)
+	f := factor.NewTrueRangeFactor("2021-08-24", 13)
 	if err := f.InitByCode(); err != nil {
 		return err
 	}

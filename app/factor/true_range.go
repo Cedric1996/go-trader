@@ -44,6 +44,55 @@ func (f *trueRangeFactor) Clean() error {
 }
 
 func (f *trueRangeFactor) execute() error {
+	queue, _ := queue.NewQueue("init true range data by code", f.calDate, 100, 1000, func(data interface{}) (interface{}, error) {
+		code := data.(string)
+		prices, err := models.GetStockPriceList(models.SearchOption{
+			Code:  code,
+			EndAt: f.timestamp,
+			Limit: 2,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(prices) != 2 {
+			return nil, fmt.Errorf("prices count is not valid")
+		}
+		trueRanges, err := models.GetTruesRange(models.SearchOption{
+			Code:  code,
+			EndAt: f.timestamp,
+			Limit: 12,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(trueRanges) != 12 {
+			return nil, fmt.Errorf("trueRanges count is not valid")
+		}
+		totalTR := 0.0
+		max := prices[0].High - prices[0].Low
+		max = math.Max(max, math.Abs(prices[0].High-prices[1].Close))
+		max = math.Max(max, math.Abs(prices[0].Low-prices[1].Close))
+		totalTR += max
+		for _, v := range trueRanges {
+			totalTR += v.TR
+		}
+		return models.TrueRange{
+			Code:      code,
+			Date:      f.calDate,
+			Timestamp: f.timestamp,
+			TR:        max,
+			ATR:       totalTR / float64(f.period),
+		}, nil
+	}, func(datas []interface{}) error {
+		if err := models.InsertTrueRange(datas); err != nil {
+			return err
+		}
+		return nil
+	})
+	for code, _ := range service.SecuritySet {
+		queue.Push(code)
+	}
+	queue.Close()
 	return nil
 }
 
@@ -62,10 +111,10 @@ func (f *trueRangeFactor) InitByCode() error {
 		}
 		trueRange := make([]interface{}, len(prices)-1)
 		totalTR := 0.0
-		for i, _ := range prices {
+		for i := 1; i < len(prices); i++ {
 			max := prices[i].High - prices[i].Low
-			max = math.Max(max, math.Abs(prices[i].High-prices[i+1].Close))
-			max = math.Max(max, math.Abs(prices[i].Low-prices[i+1].Close))
+			max = math.Max(max, math.Abs(prices[i].High-prices[i-1].Close))
+			max = math.Max(max, math.Abs(prices[i].Low-prices[i-1].Close))
 			totalTR += max
 			datum := models.TrueRange{
 				Code:      prices[i].Code,
@@ -73,16 +122,15 @@ func (f *trueRangeFactor) InitByCode() error {
 				Timestamp: prices[i].Timestamp,
 				TR:        max,
 			}
-			if i >= f.period-1 {
+			if i >= f.period {
 				datum.ATR = totalTR / float64(f.period)
 				totalTR -= trueRange[i-f.period+1].(models.TrueRange).TR
 			}
-			trueRange[i] = datum
+			trueRange[i-1] = datum
 		}
 		if err := models.InsertTrueRange(trueRange); err != nil {
 			return err
 		}
-		fmt.Printf("init tr count: %v, code: %s\n", len(trueRange), code)
 		return nil
 	}, func(dateChan *chan interface{}) {
 		for code, _ := range service.SecuritySet {
