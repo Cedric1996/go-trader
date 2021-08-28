@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-26 20:33:47
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-17 16:41:19
+ * @Last Modified time: 2021-08-27 20:25:11
  */
 
 package util
@@ -12,6 +12,11 @@ import (
 	"strings"
 	"time"
 )
+
+const maxUint = ^uint(0)
+const minUint = 0
+const maxInt = int64(maxUint >> 1)
+const minInt = -maxInt - 1
 
 func Today() string {
 	t := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
@@ -41,4 +46,8 @@ func ParseDate(t string) time.Time {
 func ToDate(timestamp int64) string {
 	tm := time.Unix(timestamp, 0)
 	return strings.Split(tm.Format(time.RFC3339), "T")[0]
+}
+
+func MaxInt() int64 {
+	return maxInt
 }

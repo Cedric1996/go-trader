@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-13 14:51:05
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-13 18:15:00
+ * @Last Modified time: 2021-08-26 15:02:26
  */
 
 package main
@@ -37,6 +37,7 @@ func main() {
 		cmd.CmdIndex,
 		cmd.CmdTask,
 		cmd.CmdVcp,
+		cmd.CmdPosition,
 	}
 
 	if err := app.Run(os.Args); err != nil {

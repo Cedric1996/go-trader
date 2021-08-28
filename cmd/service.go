@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-23 23:56:35
+ * @Last Modified time: 2021-08-26 14:35:55
  */
 package cmd
 
@@ -34,7 +34,6 @@ var (
 		Subcommands: []cli.Command{
 			subcmdPriceInit,
 			subcmdPriceDaily,
-			subcmdHighest,
 			subcmdPriceClean,
 		},
 	}
@@ -54,6 +53,12 @@ var (
 		Usage:  "get vcp",
 		Action: runGetVcp,
 	}
+	CmdPosition = cli.Command{
+		Name:   "pos",
+		Usage:  "calculate portfolio",
+		Action: runCalPortfolio,
+	}
+
 	subcmdPriceInit = cli.Command{
 		Name:  "init",
 		Usage: "init stock price and update stock table",
@@ -75,12 +80,6 @@ var (
 			cli.StringFlag{Name: "date,d"},
 		},
 		Action: runStockPriceClean,
-	}
-
-	subcmdHighest = cli.Command{
-		Name:   "highest",
-		Usage:  "fetch daily stock price and update stock table",
-		Action: runGetHighest,
 	}
 )
 
@@ -156,18 +155,9 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitTrueRangeTableIndexes(); err != nil {
+	if err := models.InitPortfolioIndex(); err != nil {
 		return err
 	}
-	// if err := models.InitRpsIncreaseTableIndexes(); err != nil {
-	// 	return err
-	// }
-	// if err := models.InitEmaTableIndexes(); err != nil {
-	// 	return err
-	// }
-	// if err := models.InitVcpTableIndexes(); err != nil {
-	// 	return err
-	// }
 	return nil
 }
 
@@ -204,11 +194,10 @@ func runGetVcp(c *cli.Context) error {
 	return nil
 }
 
-func runGetHighest(c *cli.Context) error {
+func runCalPortfolio(c *cli.Context) error {
 	app.Init()
-	highest, _ := models.GetHighestList(models.SearchOption{Reversed: true, Limit: 1}, "highest")
-	lowest, _ := models.GetHighestList(models.SearchOption{Reversed: true, Limit: 1}, "lowest")
-	valuation, _ := models.GetValuation(models.SearchOption{Reversed: true, Limit: 1})
-	fmt.Println(util.ToDate(highest[0].Timestamp), util.ToDate(lowest[0].Timestamp), util.ToDate(valuation[0].Timestamp))
+	if err := service.GetPortfolio("portfolio"); err != nil {
+		return err
+	}
 	return nil
 }
