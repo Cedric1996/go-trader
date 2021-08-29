@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-25 10:47:48
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-28 13:16:45
+ * @Last Modified time: 2021-08-29 21:26:36
  */
 
 package models
@@ -10,6 +10,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.cedric1996.com/go-trader/app/database"
@@ -17,6 +18,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 type ExportOption struct {
@@ -30,6 +33,7 @@ type Portfolio struct {
 	Risk      float64 `bson:"risk, omitempty"`
 	Inventory float64 `bson:"inventory, omitempty"`
 	Available float64 `bson:"available, omitempty"`
+	IsCurrent bool    `bson:"is_current, omitempty"`
 	Positions []*Position
 }
 
@@ -47,33 +51,64 @@ type Position struct {
 	Price       float64
 }
 
-func NewPosition(data map[string]interface{}) (*Position, error) {
-	code := data["code"].(string)
-	volume := data["volume"].(int64)
-	price := data["deal_price"].(float64)
-	profitPrice := data["profit_price"].(float64)
-	lossPrice := data["loss_price"].(float64)
+func NewPositions(datas []map[string]interface{}) error {
+	portfolio, err := GetPortfolio(1)
+	portfolio.IsCurrent = false
 	t := time.Now().Unix()
-	position := &Position{
-		Code:        code,
-		Volume:      volume,
-		BeginAt:     t,
-		EndAt:       util.MaxInt(),
-		DealPrice:   price,
-		ProfitPrice: profitPrice,
-		LossPrice:   lossPrice,
-		SellPrice:   0,
-	}
-	_, err := GetPortfolio(1)
+	portfolio.Timestamp = t
+	positions := []interface{}{}
 	if err != nil {
 		fmt.Errorf("Get portfolio from db error: %s", err)
-		return nil, err
+		return err
 	}
-	return position, nil
+	for _, data := range datas {
+		code := data["code"].(string)
+		volume := data["volume"].(int64)
+		price := data["deal_price"].(float64)
+		profitPrice := data["profit_price"].(float64)
+		lossPrice := data["loss_price"].(float64)
+		position := &Position{
+			Code:        code,
+			Volume:      volume,
+			BeginAt:     t,
+			EndAt:       util.MaxInt(),
+			DealPrice:   price,
+			ProfitPrice: profitPrice,
+			LossPrice:   lossPrice,
+			SellPrice:   0,
+		}
+		positions = append(positions, position)
+		portfolio.Available -= position.DealPrice * float64(position.Volume)
+	}
+	return insertPosition(positions, portfolio)
 }
 
-func InsertPosition(data []interface{}) error {
-	return InsertMany(data, "position")
+func insertPosition(positions []interface{}, portfolio interface{}) error {
+	return database.Transaction(func(sctx mongo.SessionContext) error {
+		err := sctx.StartTransaction(options.Transaction().
+			SetReadConcern(readconcern.Snapshot()).
+			SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
+		)
+		if err != nil {
+			return err
+		}
+		_, err = database.Collection("position").InsertMany(sctx, positions)
+		if err != nil {
+			sctx.AbortTransaction(sctx)
+			log.Println("caught exception during transaction, aborting.")
+			return err
+		}
+		_, err = database.Collection("portfolio").InsertOne(sctx, portfolio)
+		if err != nil {
+			sctx.AbortTransaction(sctx)
+			log.Println("caught exception during transaction, aborting.")
+			return err
+		}
+		if err := sctx.CommitTransaction(sctx); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func ExportPosition(opt ExportOption) error {
@@ -179,6 +214,8 @@ func InitPortfolioIndex() error {
 	}
 	portfolioModel = append(indexModel, mongo.IndexModel{
 		Keys: bson.D{{"timestamp", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"is_current", -1}},
 	})
 	_, err = database.Collection("portfolio").Indexes().CreateMany(context.Background(), portfolioModel, &options.CreateIndexesOptions{})
 	if err != nil {

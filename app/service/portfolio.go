@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-26 12:24:45
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-28 18:50:16
+ * @Last Modified time: 2021-08-29 21:26:46
  */
 
 package service
@@ -61,10 +61,8 @@ func newLongPosition(fileName string) error {
 		}
 		return true
 	})
-	for _, val := range data {
-		if _, err := models.NewPosition(val); err != nil {
-			return nil
-		}
+	if err := models.NewPositions(data); err != nil {
+		return err
 	}
 	// portfolio, err := models.CalLongPosition()
 	return nil
