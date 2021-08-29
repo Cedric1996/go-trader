@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-23 10:39:00
+ * @Last Modified time: 2021-08-30 10:10:30
  */
 
 package fetcher
@@ -20,6 +20,8 @@ var (
 func GetCurrentToken(c *ctx.Context) error {
 	Mob := os.Getenv("TRADER_MOB")
 	Pwd := os.Getenv("TRADER_PWD")
+	// Mob := viper.GetString("env.mob")
+	// Pwd := viper.GetString("env.pwd")
 	params := map[string]interface{}{
 		"method": "get_token",
 		"mob":    Mob,

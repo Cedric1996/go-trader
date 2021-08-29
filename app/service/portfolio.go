@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-26 12:24:45
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-28 18:50:16
+ * @Last Modified time: 2021-08-29 22:41:18
  */
 
 package service
@@ -10,6 +10,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -48,11 +49,8 @@ func GetPortfolio(fileName string) error {
 	return writeJSON(fileName, data)
 }
 
-func newLongPosition(fileName string) error {
+func NewPosition(fileName string) error {
 	path := PortfolioPath
-	if fileName == "" {
-		fileName = "long.json"
-	}
 	path += fileName
 	data := readJSON(path, func(data map[string]interface{}) bool {
 		t, ok := data["position_type"]
@@ -61,36 +59,23 @@ func newLongPosition(fileName string) error {
 		}
 		return true
 	})
-	for _, val := range data {
-		if _, err := models.NewPosition(val); err != nil {
-			return nil
-		}
+	if err := models.NewPositions(data); err != nil {
+		return err
 	}
-	// portfolio, err := models.CalLongPosition()
+	if err := syncPortfolio(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func readJSON(fileName string, filter func(map[string]interface{}) bool) []map[string]interface{} {
-	file, _ := os.Open(fileName)
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-
-	filteredData := []map[string]interface{}{}
-
-	// Read the array open bracket
-	decoder.Token()
-
+func readJSON(fileName string, filter func(map[string]interface{}) bool) []interface{} {
+	file, _ := ioutil.ReadFile(fileName)
 	data := map[string]interface{}{}
-	for decoder.More() {
-		decoder.Decode(&data)
-
-		if filter(data) {
-			filteredData = append(filteredData, data)
-		}
+	_ = json.Unmarshal([]byte(file), &data)
+	if filter(data) {
+		return data["data"].([]interface{})
 	}
-
-	return filteredData
+	return nil
 }
 
 func writeJSON(fileName string, data []byte) error {
@@ -113,10 +98,11 @@ func syncPortfolio() error {
 	if err != nil {
 		return err
 	}
-	portfolio, err := models.GetPortfolio(1)
-	if err != nil || portfolio == nil {
+	data, err := models.GetPortfolio(1)
+	if err != nil || data == nil {
 		return err
 	}
+	portfolio := data[0]
 	for _, position := range positions {
 		c := &ctx.Context{}
 		if err := fetcher.GetCurrentPrice(c, position.Code); err != nil {
@@ -124,6 +110,10 @@ func syncPortfolio() error {
 		}
 		price := models.ParseCurrentPrice(c)
 		position.Price = price
+	}
+	portfolio.Positions = positions
+	if err := portfolio.CalPortfolio(); err != nil {
+		return err
 	}
 	return nil
 }

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 15:06:23
+ * @Last Modified time: 2021-08-30 09:16:38
  */
 
 package models
@@ -66,6 +66,41 @@ func InsertVcp(datas []interface{}) error {
 
 func RemoveVcp(t int64) (err error) {
 	return RemoveMany(t, "vcp")
+}
+
+func GetVcp(opt SearchOption) ([]*Vcp, error) {
+	queryBson := bson.D{}
+	sortBy := -1
+	if opt.Reversed {
+		sortBy = 1
+	}
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit)
+	var results []*Vcp
+
+	if opt.EndAt > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	}
+	if opt.Timestamp > 0 {
+		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
+	}
+	cur, err := database.Collection("vcp").Find(context.TODO(), queryBson, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for cur.Next(context.TODO()) {
+		var elem Vcp
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func GetVcpByDate(t int64) ([]*Vcp, error) {

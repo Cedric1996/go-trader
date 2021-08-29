@@ -2,16 +2,13 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-26 14:35:55
+ * @Last Modified time: 2021-08-30 11:32:29
  */
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
+	"time"
 
 	"github.cedric1996.com/go-trader/app"
 	"github.cedric1996.com/go-trader/app/factor"
@@ -51,12 +48,15 @@ var (
 	CmdVcp = cli.Command{
 		Name:   "vcp",
 		Usage:  "get vcp",
-		Action: runGetVcp,
+		Action: runGetWeekVcp,
 	}
 	CmdPosition = cli.Command{
-		Name:   "pos",
-		Usage:  "calculate portfolio",
-		Action: runCalPortfolio,
+		Name:  "pos",
+		Usage: "calculate portfolio",
+		Subcommands: []cli.Command{
+			subcmdPositionNew,
+			subcmdCalPosition,
+		},
 	}
 
 	subcmdPriceInit = cli.Command{
@@ -81,6 +81,20 @@ var (
 		},
 		Action: runStockPriceClean,
 	}
+
+	subcmdPositionNew = cli.Command{
+		Name:  "new",
+		Usage: "new long or short position",
+		Flags: []cli.Flag{
+			cli.StringFlag{Name: "file,f"},
+		},
+		Action: runNewPosition,
+	}
+	subcmdCalPosition = cli.Command{
+		Name:   "cal",
+		Usage:  "calculate portfolio",
+		Action: runCalPortfolio,
+	}
 )
 
 func runFetchAllSecurities(c *cli.Context) error {
@@ -94,10 +108,11 @@ func runFetchAllSecurities(c *cli.Context) error {
 
 func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
-	dates, err := service.FetchStockPriceDayDaily()
-	if err != nil {
-		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
-	}
+	// dates, err := service.FetchStockPriceDayDaily()
+	// if err != nil {
+	// 	return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
+	// }
+	dates := []string{"2021-08-27"}
 	for _, day := range dates {
 		fmt.Printf("begin init stock price by day: %s\n", day)
 		if err := service.InitStockPriceByDay(day); err != nil {
@@ -171,24 +186,29 @@ func runGetVcp(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	codes := make([]string, 0)
-	for _, vcp := range vcps {
-		parts := strings.Split(vcp.RpsBase.Code, ".")
-		prefix := "sh"
-		if parts[1] == "XSHE" {
-			prefix = "sz"
-		}
-		codes = append(codes, prefix+parts[0])
+	datas := []string{}
+	for _, v := range vcps {
+		datas = append(datas, v.RpsBase.Code)
 	}
-	result := make(map[string]interface{})
-	result["leek-fund.stocks"] = codes
+	if err := service.GenerateVcpFile(datas); err != nil {
+		return err
+	}
+	return nil
+}
 
-	data, err := json.Marshal(&result)
+func runGetWeekVcp(c *cli.Context) error {
+	app.Init()
+	codes, err := service.GetVcpByInterval(util.Today(), 5)
 	if err != nil {
 		return err
 	}
-
-	if err := ioutil.WriteFile(".result/result.json", data, os.ModePerm); err != nil {
+	datas := []string{}
+	for k, v := range codes {
+		if v >= 4 {
+			datas = append(datas, k)
+		}
+	}
+	if err := service.GenerateVcpFile(datas); err != nil {
 		return err
 	}
 	return nil
@@ -197,6 +217,32 @@ func runGetVcp(c *cli.Context) error {
 func runCalPortfolio(c *cli.Context) error {
 	app.Init()
 	if err := service.GetPortfolio("portfolio"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runNewPosition(c *cli.Context) error {
+	app.Init()
+	d := c.String("file")
+	if len(d) == 0 {
+		d = "long.json"
+	}
+	if err := service.NewPosition(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+func initPortfolio(c *cli.Context) error {
+	app.Init()
+	if err := models.InsertPortfolio(&models.Portfolio{
+		Risk:      0.0,
+		Inventory: 0.0,
+		Available: 1200000.0,
+		IsCurrent: true,
+		Timestamp: time.Now().Unix(),
+	}); err != nil {
 		return err
 	}
 	return nil

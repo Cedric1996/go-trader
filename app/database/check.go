@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-07 22:48:55
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-04-24 18:04:29
+ * @Last Modified time: 2021-08-29 21:12:20
  */
 
 package database
@@ -10,6 +10,7 @@ package database
 import (
 	"fmt"
 
+	"github.cedric1996.com/go-trader/app/database/mongodb"
 	"github.cedric1996.com/go-trader/app/database/redis"
 	"github.com/spf13/viper"
 )
@@ -24,6 +25,7 @@ func Init() {
 	successSet = viper.GetString("redis.sets.success")
 	failSet = viper.GetString("redis.sets.fail")
 	handleSet = viper.GetString("redis.maps.handle")
+	mongodb.ConnectMongoClient()
 }
 
 func FetchSuccess(member string) error {
