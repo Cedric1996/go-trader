@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-03-14 21:49:41
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-30 10:10:30
+ * @Last Modified time: 2021-08-30 16:08:45
  */
 
 package fetcher
@@ -11,6 +11,7 @@ import (
 	"os"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
+	"github.cedric1996.com/go-trader/app/util"
 )
 
 var (
@@ -143,11 +144,13 @@ func GetCurrentTick(c *ctx.Context, code string) error {
 	return fetchData(c, "get current tick")
 }
 
-func GetCurrentTicks(c *ctx.Context, codes string) error {
+func GetCurrentTicks(c *ctx.Context, code string, limit int64) error {
 	params := map[string]interface{}{
-		"method": "get_current_ticks",
-		"token":  Token(),
-		"code":   codes,
+		"method":   "get_ticks",
+		"token":    Token(),
+		"code":     code,
+		"count":    limit,
+		"end_date": util.Today(),
 	}
 	c.Params = params
 	return fetchData(c, "get current tick")

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-30 10:35:17
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-30 10:52:54
+ * @Last Modified time: 2021-08-31 09:00:27
  */
 
 package service
@@ -39,6 +39,9 @@ func GetVcpByInterval(startDate string, interval int64) (map[string]int, error) 
 			codeMap[vcp.RpsBase.Code] = 1
 		}
 	}
+	if err := GetNewVcp(tradeDay[0].Timestamp, &codeMap); err != nil {
+		return nil, err
+	}
 	return codeMap, nil
 }
 
@@ -63,5 +66,21 @@ func GenerateVcpFile(datas []string) error {
 	if err := ioutil.WriteFile(".result/result.json", data, os.ModePerm); err != nil {
 		return err
 	}
+	return nil
+}
+
+func GetNewVcp(t int64, vcpMap *map[string]int) error {
+	newVcps, err := models.GetVcpByDate(t)
+	if err != nil {
+		return err
+	}
+	mapVal := *vcpMap
+	for _, v := range newVcps {
+		val := mapVal[v.RpsBase.Code]
+		if val == 1 {
+			delete(mapVal, v.RpsBase.Code)
+		}
+	}
+	vcpMap = &mapVal
 	return nil
 }

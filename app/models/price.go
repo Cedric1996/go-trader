@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 17:25:36
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-27 20:59:09
+ * @Last Modified time: 2021-08-30 16:16:18
  */
 
 package models
@@ -72,7 +72,10 @@ func ParseCurrentPrice(c *ctx.Context) float64 {
 		fmt.Errorf("Parse price info with error.")
 		return 0
 	}
-	val := resBody.GetVals()[0]
-	price, _ := strconv.ParseFloat(val[1], 64)
+	val := resBody.GetVals()
+	if len(val) == 0 {
+		fmt.Errorf("Parse price info with error: %v", code)
+	}
+	price, _ := strconv.ParseFloat(val[0][2], 64)
 	return price
 }

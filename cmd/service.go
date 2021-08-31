@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-30 11:32:29
+ * @Last Modified time: 2021-08-30 22:16:24
  */
 package cmd
 
@@ -56,6 +56,7 @@ var (
 		Subcommands: []cli.Command{
 			subcmdPositionNew,
 			subcmdCalPosition,
+			subcmdHoldPosition,
 		},
 	}
 
@@ -87,6 +88,7 @@ var (
 		Usage: "new long or short position",
 		Flags: []cli.Flag{
 			cli.StringFlag{Name: "file,f"},
+			cli.StringFlag{Name: "type,t"},
 		},
 		Action: runNewPosition,
 	}
@@ -94,6 +96,11 @@ var (
 		Name:   "cal",
 		Usage:  "calculate portfolio",
 		Action: runCalPortfolio,
+	}
+	subcmdHoldPosition = cli.Command{
+		Name:   "hold",
+		Usage:  "output holding positions",
+		Action: runHoldPosition,
 	}
 )
 
@@ -108,11 +115,11 @@ func runFetchAllSecurities(c *cli.Context) error {
 
 func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
-	// dates, err := service.FetchStockPriceDayDaily()
-	// if err != nil {
-	// 	return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
-	// }
-	dates := []string{"2021-08-27"}
+	dates, err := service.FetchStockPriceDayDaily()
+	if err != nil {
+		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
+	}
+	// dates := []string{"2021-08-27"}
 	for _, day := range dates {
 		fmt.Printf("begin init stock price by day: %s\n", day)
 		if err := service.InitStockPriceByDay(day); err != nil {
@@ -222,13 +229,22 @@ func runCalPortfolio(c *cli.Context) error {
 	return nil
 }
 
+func runHoldPosition(c *cli.Context) error {
+	app.Init()
+	if err := service.GetPositionSignal(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func runNewPosition(c *cli.Context) error {
 	app.Init()
 	d := c.String("file")
+	flag := c.Bool("type")
 	if len(d) == 0 {
 		d = "long.json"
 	}
-	if err := service.NewPosition(d); err != nil {
+	if err := service.NewPosition(d, flag); err != nil {
 		return err
 	}
 	return nil
@@ -239,10 +255,70 @@ func initPortfolio(c *cli.Context) error {
 	if err := models.InsertPortfolio(&models.Portfolio{
 		Risk:      0.0,
 		Inventory: 0.0,
-		Available: 1200000.0,
+		Available: 851.80,
 		IsCurrent: true,
 		Timestamp: time.Now().Unix(),
 	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func initPosition(c *cli.Context) error {
+	app.Init()
+	if err := models.InsertPortfolio(&models.Portfolio{
+		Risk:      0.0,
+		Inventory: 0.0,
+		Available: 851.80,
+		IsCurrent: true,
+		Timestamp: time.Now().Unix(),
+	}); err != nil {
+		return err
+	}
+
+	positions := []interface{}{
+		models.Position{
+			Code:      "600760.XSHG",
+			Volume:    5976,
+			BeginAt:   util.ParseDate("2021-08-23").Unix(),
+			EndAt:     util.MaxInt(),
+			DealPrice: 72.980,
+			LossPrice: 71.0,
+		},
+		models.Position{
+			Code:      "600096.XSHG",
+			Volume:    10600,
+			EndAt:     util.MaxInt(),
+			BeginAt:   util.ParseDate("2021-08-25").Unix(),
+			DealPrice: 19.241,
+			LossPrice: 18.5,
+		},
+		models.Position{
+			Code:      "300316.XSHE",
+			Volume:    2900,
+			EndAt:     util.MaxInt(),
+			BeginAt:   util.ParseDate("2021-08-26").Unix(),
+			DealPrice: 69.543,
+			LossPrice: 65.1,
+		},
+		models.Position{
+			Code:      "600623.XSHG",
+			Volume:    12400,
+			BeginAt:   util.ParseDate("2021-08-30").Unix(),
+			EndAt:     util.MaxInt(),
+			DealPrice: 12.627,
+			LossPrice: 12.16,
+		},
+		models.Position{
+			Code:      "300587.XSHE",
+			Volume:    7200,
+			BeginAt:   util.ParseDate("2021-08-30").Unix(),
+			EndAt:     util.MaxInt(),
+			DealPrice: 21.860,
+			LossPrice: 20.0,
+		},
+	}
+	if err := models.InsertPositions(positions); err != nil {
 		return err
 	}
 	return nil

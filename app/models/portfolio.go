@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-25 10:47:48
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-29 23:03:24
+ * @Last Modified time: 2021-08-30 23:29:20
  */
 
 package models
@@ -40,10 +40,10 @@ type Portfolio struct {
 type Position struct {
 	Code        string  `bson:"code"`
 	BeginAt     int64   `bson:"begin_at"`
+	Volume      int64   `bson:"volume"`
 	DealPrice   float64 `bson:"deal_price"`
 	LossPrice   float64 `bson:"loss_price"`
 	EndAt       int64   `bson:"end_at, omitempty"`
-	Volume      int64   `bson:"volume, omitempty"`
 	SellPrice   float64 `bson:"sell_price, omitempty"`
 	ProfitPrice float64 `bson:"profit_price, omitempty"`
 	Price       float64 `bson:"-"`
@@ -51,12 +51,8 @@ type Position struct {
 	Risk        float64 `bson:"-"`
 }
 
-func NewPositions(datas []interface{}) error {
-	data, err := GetPortfolio(1)
-	if err != nil || len(data) == 0 {
-		fmt.Errorf("Get portfolio from db error: %s", err)
-		return err
-	}
+func OpenPositions(datas []interface{}) error {
+	data, _ := GetPortfolio(1)
 	portfolio := data[0]
 	portfolio.IsCurrent = false
 	t := time.Now().Unix()
@@ -86,7 +82,80 @@ func NewPositions(datas []interface{}) error {
 	return insertPosition(positions, portfolio)
 }
 
+func ClosePositions(datas []interface{}) error {
+	t := time.Now().Unix()
+	data, _ := GetPortfolio(1)
+	portfolio := data[0]
+	portfolio.IsCurrent = false
+	portfolio.Timestamp = t
+	positions := []interface{}{}
+	updatePositions := []interface{}{}
+
+	holdPositions, err := GetHoldPosition()
+	if err != nil {
+		return err
+	}
+	holdPositionMap := map[string]*Position{}
+	for _, datum := range holdPositions {
+		holdPositionMap[datum.Code] = datum
+	}
+
+	for _, data := range datas {
+		pos := data.(map[string]interface{})
+		code := pos["code"].(string)
+		sellPrice := pos["sell_price"].(float64)
+		volume := int64(pos["volume"].(float64))
+		position := &Position{
+			Code: code,
+		}
+		portfolio.Available += position.SellPrice * float64(position.Volume)
+		hold := holdPositionMap[code]
+		hold.EndAt = t
+		hold.SellPrice = sellPrice
+		if hold.Volume == volume {
+			updatePositions = append(updatePositions, hold)
+		} else {
+			position.Volume = hold.Volume - volume
+			position.DealPrice = (hold.DealPrice*float64(hold.Volume) - sellPrice*float64(volume)) / float64(position.Volume)
+			position.BeginAt = t
+			position.EndAt = util.MaxInt()
+			position.ProfitPrice = hold.ProfitPrice
+			position.LossPrice = hold.LossPrice
+			positions = append(positions, position)
+		}
+	}
+	return deletePosition(positions, updatePositions, portfolio)
+}
+
 func insertPosition(positions []interface{}, portfolio interface{}) error {
+	return database.Transaction(func(sctx mongo.SessionContext) error {
+		err := sctx.StartTransaction(options.Transaction().
+			SetReadConcern(readconcern.Snapshot()).
+			SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
+		)
+		if err != nil {
+			return err
+		}
+		_, err = database.Collection("position").InsertMany(sctx, positions)
+		if err != nil {
+			sctx.AbortTransaction(sctx)
+			log.Println("caught exception during transaction, aborting.")
+			return err
+		}
+		_, err = database.Collection("portfolio").InsertOne(sctx, portfolio)
+		if err != nil {
+			sctx.AbortTransaction(sctx)
+			log.Println("caught exception during transaction, aborting.")
+			return err
+		}
+		if err := sctx.CommitTransaction(sctx); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func deletePosition(positions, updatePositions []interface{}, portfolio interface{}) error {
 	return database.Transaction(func(sctx mongo.SessionContext) error {
 		err := sctx.StartTransaction(options.Transaction().
 			SetReadConcern(readconcern.Snapshot()).
@@ -120,7 +189,7 @@ func ExportPosition(opt ExportOption) error {
 
 func GetHoldPosition() ([]*Position, error) {
 	t := time.Now().Unix()
-	queryBson := bson.D{{"end_at", bson.D{{"gte", t}}}}
+	queryBson := bson.D{{"end_at", bson.D{{"$gte", t}}}}
 	cur, err := database.Collection("position").Find(context.TODO(), queryBson)
 	if err != nil {
 		return nil, err
@@ -210,7 +279,7 @@ func (portfolio *Portfolio) CalPortfolio() error {
 	total := portfolio.Inventory + portfolio.Available
 	for _, position := range portfolio.Positions {
 		position.Percent = position.Price * float64(position.Volume) * 100 / total
-		position.Risk = (position.DealPrice - position.LossPrice) / position.DealPrice
+		position.Risk = (position.DealPrice - position.LossPrice) / position.DealPrice * position.Percent
 		portfolio.Risk += position.Risk
 	}
 	if err := InsertPortfolio(portfolio); err != nil {
@@ -224,6 +293,10 @@ func InsertPortfolio(data interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func InsertPositions(data []interface{}) error {
+	return InsertMany(data, "position")
 }
 
 func InitPortfolioIndex() error {
