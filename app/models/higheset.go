@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-23 21:18:34
+ * @Last Modified time: 2021-09-04 14:50:46
  */
 
 package models
@@ -125,8 +125,15 @@ func GetHighestList(opt SearchOption, name string) ([]*Highest, error) {
 	if len(opt.Code) > 0 {
 		queryBson = append(queryBson, bson.E{"code", opt.Code})
 	}
-	if opt.EndAt > 0 {
-		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	if opt.EndAt > 0 || opt.BeginAt > 0 {
+		scope := bson.D{}
+		if opt.BeginAt > 0 {
+			scope = append(scope, bson.E{"$gte", opt.BeginAt})
+		}
+		if opt.EndAt > 0 {
+			scope = append(scope, bson.E{"$lte", opt.EndAt})
+		}
+		queryBson = append(queryBson, bson.E{"timestamp", scope})
 	}
 	if opt.Timestamp > 0 {
 		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-30 22:16:24
+ * @Last Modified time: 2021-09-04 14:44:14
  */
 package cmd
 
@@ -177,7 +177,7 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	if err := models.InitPortfolioIndex(); err != nil {
+	if err := models.InitVcpTrIndexes(); err != nil {
 		return err
 	}
 	return nil
@@ -205,13 +205,13 @@ func runGetVcp(c *cli.Context) error {
 
 func runGetWeekVcp(c *cli.Context) error {
 	app.Init()
-	codes, err := service.GetVcpByInterval(util.Today(), 5)
+	codes, err := service.GetVcpByInterval(util.Today(), 3)
 	if err != nil {
 		return err
 	}
 	datas := []string{}
 	for k, v := range codes {
-		if v >= 4 {
+		if v >= 3 {
 			datas = append(datas, k)
 		}
 	}

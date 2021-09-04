@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-22 17:12:10
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-22 17:20:13
+ * @Last Modified time: 2021-09-04 18:51:20
  */
 
 package models
@@ -56,13 +56,20 @@ func GetTruesRange(opt SearchOption) ([]*TrueRange, error) {
 	if opt.Reversed {
 		sortBy = 1
 	}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit)
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit).SetSkip(opt.Skip)
 	var results []*TrueRange
 	if len(opt.Code) > 0 {
 		queryBson = append(queryBson, bson.E{"code", opt.Code})
 	}
-	if opt.EndAt > 0 {
-		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	if opt.EndAt > 0 || opt.BeginAt > 0 {
+		scope := bson.D{}
+		if opt.BeginAt > 0 {
+			scope = append(scope, bson.E{"$gte", opt.BeginAt})
+		}
+		if opt.EndAt > 0 {
+			scope = append(scope, bson.E{"$lte", opt.EndAt})
+		}
+		queryBson = append(queryBson, bson.E{"timestamp", scope})
 	}
 	cur, err := database.Collection("tr").Find(context.TODO(), queryBson, findOptions)
 	if err != nil {

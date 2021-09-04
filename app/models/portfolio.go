@@ -222,8 +222,15 @@ func GetPosition(opt SearchOption) ([]*Position, error) {
 	if len(opt.Code) > 0 {
 		queryBson = append(queryBson, bson.E{"code", opt.Code})
 	}
-	if opt.EndAt > 0 {
-		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	if opt.EndAt > 0 || opt.BeginAt > 0 {
+		scope := bson.D{}
+		if opt.BeginAt > 0 {
+			scope = append(scope, bson.E{"$gte", opt.BeginAt})
+		}
+		if opt.EndAt > 0 {
+			scope = append(scope, bson.E{"$lte", opt.EndAt})
+		}
+		queryBson = append(queryBson, bson.E{"timestamp", scope})
 	}
 	if opt.Timestamp > 0 {
 		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})

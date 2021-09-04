@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-30 10:35:17
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-31 09:00:27
+ * @Last Modified time: 2021-08-31 22:23:44
  */
 
 package service
@@ -39,9 +39,9 @@ func GetVcpByInterval(startDate string, interval int64) (map[string]int, error) 
 			codeMap[vcp.RpsBase.Code] = 1
 		}
 	}
-	if err := GetNewVcp(tradeDay[0].Timestamp, &codeMap); err != nil {
-		return nil, err
-	}
+	// if err := GetNewVcp(tradeDay[0].Timestamp, &codeMap); err != nil {
+	// 	return nil, err
+	// }
 	return codeMap, nil
 }
 
@@ -74,13 +74,14 @@ func GetNewVcp(t int64, vcpMap *map[string]int) error {
 	if err != nil {
 		return err
 	}
+	newMap := make(map[string]int)
 	mapVal := *vcpMap
 	for _, v := range newVcps {
 		val := mapVal[v.RpsBase.Code]
-		if val == 1 {
-			delete(mapVal, v.RpsBase.Code)
+		if val != 1 {
+			newMap[v.RpsBase.Code] = val
 		}
 	}
-	vcpMap = &mapVal
+	vcpMap = &newMap
 	return nil
 }

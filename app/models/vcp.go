@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-30 09:16:38
+ * @Last Modified time: 2021-09-04 18:05:36
  */
 
 package models
@@ -74,11 +74,18 @@ func GetVcp(opt SearchOption) ([]*Vcp, error) {
 	if opt.Reversed {
 		sortBy = 1
 	}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit)
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit).SetSkip(opt.Skip)
 	var results []*Vcp
 
-	if opt.EndAt > 0 {
-		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	if opt.EndAt > 0 || opt.BeginAt > 0 {
+		scope := bson.D{}
+		if opt.BeginAt > 0 {
+			scope = append(scope, bson.E{"$gte", opt.BeginAt})
+		}
+		if opt.EndAt > 0 {
+			scope = append(scope, bson.E{"$lte", opt.EndAt})
+		}
+		queryBson = append(queryBson, bson.E{"timestamp", scope})
 	}
 	if opt.Timestamp > 0 {
 		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
@@ -167,6 +174,24 @@ func InitVcpTableIndexes() error {
 		Keys: bson.D{{"rps_120", -1}},
 	})
 	_, err := database.Collection("vcp").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func InitVcpTrIndexes() error {
+	indexModel := make([]mongo.IndexModel, 0)
+	indexModel = append(indexModel, mongo.IndexModel{
+		Keys: bson.D{{"start", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"end", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"net", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"period", -1}},
+	})
+	_, err := database.Collection("vcp_tr_strategy").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}

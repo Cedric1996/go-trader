@@ -23,6 +23,7 @@ type SearchOption struct {
 	Limit     int64
 	Reversed  bool
 	SortBy    string
+	Skip      int64
 }
 
 func UpdateStockPriceDay(c *ctx.Context) error {
@@ -72,14 +73,21 @@ func GetStockPriceList(opt SearchOption) ([]*StockPriceDay, error) {
 	if opt.Reversed {
 		sortBy = 1
 	}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit)
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit).SetSkip(opt.Skip)
 	var results []*StockPriceDay
 
 	if len(opt.Code) > 0 {
 		queryBson = append(queryBson, bson.E{"code", opt.Code})
 	}
-	if opt.EndAt > 0 {
-		queryBson = append(queryBson, bson.E{"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}})
+	if opt.EndAt > 0 || opt.BeginAt > 0 {
+		scope := bson.D{}
+		if opt.BeginAt > 0 {
+			scope = append(scope, bson.E{"$gte", opt.BeginAt})
+		}
+		if opt.EndAt > 0 {
+			scope = append(scope, bson.E{"$lte", opt.EndAt})
+		}
+		queryBson = append(queryBson, bson.E{"timestamp", scope})
 	}
 	if opt.Timestamp > 0 {
 		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
