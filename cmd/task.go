@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-31 22:35:37
+ * @Last Modified time: 2021-09-04 23:07:29
  */
 
 package cmd
@@ -87,12 +87,14 @@ var (
 
 func runRpsFactor(c *cli.Context) error {
 	app.Init()
-	t := util.ParseDate("2020-06-01").Unix()
+	// t := util.ParseDate("2020-06-01").Unix()
+	t := util.ParseDate("2019-03-07").Unix()
+
 	tradeDays, err := models.GetTradeDay(true, 300, t)
 	if err != nil {
 		return err
 	}
-	taskQueue := queue.NewTaskQueue("rps", 20, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("rps", 50, func(data interface{}) error {
 		date := data.(string)
 		rps := factor.NewRpsFactor("rps", 120, 85, date)
 		if err := rps.Run(); err != nil {
@@ -148,8 +150,8 @@ func runHighestFactor(c *cli.Context) error {
 		fmt.Printf("rps task has been done, date: %s\n", date)
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2020-06-01").Unix()
-		// t := util.ParseDate("2021-08-23").Unix()
+		// t := util.ParseDate("2020-06-01").Unix()
+		t := util.ParseDate("2019-03-07").Unix()
 		tradeDays, err := models.GetTradeDay(true, 1, t)
 		if err != nil {
 			return
@@ -193,8 +195,9 @@ func runTrendFactor(c *cli.Context) error {
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
+		// t := util.ParseDate("2019-03-07").Unix()
 		t := util.ParseDate("2020-06-01").Unix()
-		tradeDays, err := models.GetTradeDay(true, 300, t)
+		tradeDays, err := models.GetTradeDay(true, 400, t)
 		if err != nil {
 			return
 		}

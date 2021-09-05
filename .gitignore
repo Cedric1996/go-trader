@@ -1,6 +1,7 @@
 .vscode/
 .database/
 .result/
+.charts/
 
 /go-trader
 /bin

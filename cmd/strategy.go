@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-04 18:43:45
+ * @Last Modified time: 2021-09-05 15:29:18
  */
 package cmd
 
@@ -26,17 +26,28 @@ var (
 	}
 
 	subcmdVcpTr = cli.Command{
-		Name:   "vcp",
-		Usage:  "vcp tr strategy",
+		Name:  "vcp",
+		Usage: "vcp tr strategy",
+		Flags: []cli.Flag{
+			cli.BoolFlag{Name: "output,o"},
+		},
 		Action: runVcpTr,
 	}
 )
 
 func runVcpTr(c *cli.Context) error {
 	app.Init()
-	v := strategy.NewVcpStrategy()
-	if err := v.Run(); err != nil {
-		return fmt.Errorf("execute vcp tr strategy fail, please check it", err)
+	v := strategy.NewVcpStrategy("vcp_tr_strategy_02")
+	output := c.Bool("output")
+	if !output {
+		if err := v.Run(); err != nil {
+			return fmt.Errorf("execute vcp tr strategy fail, please check it", err)
+		}
+	} else {
+		if err := v.Output(); err != nil {
+			return err
+		}
+		v.Kelly()
 	}
 	return nil
 }

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:18:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-23 22:44:02
+ * @Last Modified time: 2021-09-05 10:30:53
  */
 
 package models
@@ -30,6 +30,27 @@ func InsertHighLowIndex(datas []interface{}) error {
 
 func RemoveHighLowIndex(t int64) error {
 	return RemoveMany(t, "high_low_index")
+}
+
+func GetHighLowIndex(opt SearchOption) ([]*HighLowIndex, error) {
+	cur, err := GetCursor(opt, "high_low_index")
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*HighLowIndex, 0)
+	for cur.Next(context.TODO()) {
+		var elem HighLowIndex
+		err := cur.Decode(&elem)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return results, err
+	}
+	return results, nil
 }
 
 func InitHighLowTableIndexes() error {

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-04 18:05:36
+ * @Last Modified time: 2021-09-05 14:57:38
  */
 
 package models
@@ -10,6 +10,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,6 +24,14 @@ type Vcp struct {
 	HighestRatio float64 `bson:"highest_ratio, omitempty"`
 	VcpRatio     float64 `bson:"vcp_ratio, omitempty"`
 	Rps_120      int64   `bson:"rps_120, omitempty"`
+}
+
+type VcpTr struct {
+	Code   string    `bson:"code"`
+	Start  time.Time `bson:"start"`
+	End    time.Time `bson:"end"`
+	Period int64     `bson:"period"`
+	Net    float64   `bson:"net"`
 }
 
 func GetVcpRange(code string, timestamp, period int64) (float64, error) {
@@ -69,43 +78,43 @@ func RemoveVcp(t int64) (err error) {
 }
 
 func GetVcp(opt SearchOption) ([]*Vcp, error) {
-	queryBson := bson.D{}
-	sortBy := -1
-	if opt.Reversed {
-		sortBy = 1
-	}
-	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit).SetSkip(opt.Skip)
 	var results []*Vcp
-
-	if opt.EndAt > 0 || opt.BeginAt > 0 {
-		scope := bson.D{}
-		if opt.BeginAt > 0 {
-			scope = append(scope, bson.E{"$gte", opt.BeginAt})
-		}
-		if opt.EndAt > 0 {
-			scope = append(scope, bson.E{"$lte", opt.EndAt})
-		}
-		queryBson = append(queryBson, bson.E{"timestamp", scope})
-	}
-	if opt.Timestamp > 0 {
-		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
-	}
-	cur, err := database.Collection("vcp").Find(context.TODO(), queryBson, findOptions)
+	cur, err := GetCursor(opt, "vcp")
 	if err != nil {
 		return nil, err
 	}
-
 	for cur.Next(context.TODO()) {
 		var elem Vcp
 		err := cur.Decode(&elem)
 		if err != nil {
-			return nil, err
+			return results, err
 		}
 		results = append(results, &elem)
 	}
 
 	if err := cur.Err(); err != nil {
+		return results, err
+	}
+	return results, nil
+}
+
+func GetVcpTr(opt SearchOption, name string) ([]*VcpTr, error) {
+	var results []*VcpTr
+	cur, err := GetCursor(opt, name)
+	if err != nil {
 		return nil, err
+	}
+	for cur.Next(context.TODO()) {
+		var elem VcpTr
+		err := cur.Decode(&elem)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return results, err
 	}
 	return results, nil
 }
@@ -191,7 +200,7 @@ func InitVcpTrIndexes() error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"period", -1}},
 	})
-	_, err := database.Collection("vcp_tr_strategy").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection("vcp_tr_strategy_02").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}
