@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-17 15:55:00
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-04 20:47:32
+ * @Last Modified time: 2021-09-06 10:39:28
  */
 
 package models
@@ -43,7 +43,9 @@ func GetCursor(opt SearchOption, name string) (*mongo.Cursor, error) {
 		sortBy = 1
 	}
 	findOptions := options.Find().SetSort(bson.D{{"timestamp", sortBy}}).SetLimit(opt.Limit).SetSkip(opt.Skip)
-
+	if len(opt.Code) > 0 {
+		queryBson = append(queryBson, bson.E{"code", opt.Code})
+	}
 	if opt.EndAt > 0 || opt.BeginAt > 0 {
 		scope := bson.D{}
 		if opt.BeginAt > 0 {

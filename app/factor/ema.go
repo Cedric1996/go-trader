@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-17 14:13:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-22 10:56:26
+ * @Last Modified time: 2021-09-06 11:08:20
  */
 
 package factor
@@ -39,18 +39,22 @@ func (f *emaFactor) Clean() error {
 }
 
 func (f *emaFactor) run() error {
-	queue, _ := queue.NewQueue("index moving average", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
+	queue, _ := queue.NewQueue("index moving average", f.calDate, 100, 1, func(data interface{}) (interface{}, error) {
 		code := data.(string)
+		count := f.count + MAX_MA_RANGE
 		prices, err := models.GetStockPriceList(models.SearchOption{
 			Code:  code,
 			EndAt: f.timestamp,
-			Limit: f.count + MAX_MA_RANGE,
+			Limit: count,
 		})
-		if err != nil || int64(len(prices)) != f.count+MAX_MA_RANGE {
+		if err != nil || len(prices) <= MAX_MA_RANGE {
 			return nil, nil
 		}
-		results := make([]interface{}, f.count)
-		closeArr := make([]float64, len(prices))
+		if int64(len(prices)) != count {
+			count = int64(len(prices))
+		}
+		results := make([]interface{}, count-MAX_MA_RANGE)
+		closeArr := make([]float64, count)
 		for i, p := range prices {
 			closeArr[i] = p.Close
 		}
@@ -59,7 +63,7 @@ func (f *emaFactor) run() error {
 		ema_26 := calEma(closeArr, 26)
 		ema_60 := calEma(closeArr, 60)
 		var i int64
-		for i = 0; i < f.count; i++ {
+		for i = 0; i < count-MAX_MA_RANGE; i++ {
 			results[i] = models.Ema{
 				Code:      prices[i].Code,
 				Date:      util.ToDate(prices[i].Timestamp),

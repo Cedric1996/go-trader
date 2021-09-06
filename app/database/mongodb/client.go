@@ -33,7 +33,7 @@ func ConnectMongoClient() {
 		viper.GetString("mongo.password"),
 		viper.GetString("mongo.hostname"),
 		viper.GetString("mongo.port"))
-	mongoClient, _ = mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	mongoClient, _ = mongo.Connect(ctx, options.Client().ApplyURI(uri).SetMaxPoolSize(200))
 	if err := mongoClient.Ping(ctx, readpref.Primary()); err != nil {
 		log.Fatal(err)
 	}

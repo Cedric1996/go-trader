@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-04 13:58:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 09:08:01
+ * @Last Modified time: 2021-09-06 11:52:20
  */
 
 package strategy
@@ -10,6 +10,7 @@ package strategy
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"sort"
@@ -32,7 +33,7 @@ type vcp struct {
 	periods  []interface{}
 }
 
-type tradeUnit struct {
+type TradeUnit struct {
 	Code   string  `bson:"code"`
 	Start  int64   `bson:"start"`
 	End    int64   `bson:"end"`
@@ -54,16 +55,15 @@ func NewVcpStrategy(name string) *vcp {
 }
 
 func (v *vcp) Run() error {
-	queue, err := queue.NewQueue("vcp with true range", "", 100, 1000, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue("vcp with ema", "", 100, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(*models.Vcp)
-		unit, err := handleTradeSignal(TradeSignal{
+		unit, _ := handleTradeSignal(TradeSignal{
 			Code:      datum.RpsBase.Code,
 			StartUnix: datum.RpsBase.Timestamp,
 		})
-		if err != nil {
-			return nil, err
+		if unit == nil {
+			return nil, errors.New("error")
 		}
-
 		return unit, nil
 	}, func(datas []interface{}) error {
 		if err := models.InsertMany(datas, v.Name); err != nil {
@@ -75,6 +75,7 @@ func (v *vcp) Run() error {
 		return err
 	}
 	opt := models.SearchOption{
+		// BeginAt: util.ParseDate("2020-06-02").Unix(),
 		Limit: 1000,
 		Skip:  0,
 	}
@@ -95,13 +96,13 @@ func (v *vcp) Run() error {
 	return nil
 }
 
-func handleTradeSignal(sig TradeSignal) (unit *tradeUnit, err error) {
+func handleTradeSignal(sig TradeSignal) (unit *TradeUnit, err error) {
 	opt := models.SearchOption{
 		Code:     sig.Code,
 		BeginAt:  sig.StartUnix,
 		Reversed: true,
 	}
-	unit = &tradeUnit{
+	unit = &TradeUnit{
 		Code:  sig.Code,
 		Start: sig.StartUnix,
 	}
@@ -119,24 +120,40 @@ func handleTradeSignal(sig TradeSignal) (unit *tradeUnit, err error) {
 	}
 	// dealPrice := prices[0].Close
 	var preClose, sellPrice, atr, dealPrice float64
-	const BreakCo = 0.3
-	const LossCo = 1.5
+	const BreakCo = 0.5
+	const LossCo = 1
 	const ProfitCo = 3
 	isDeal := false
+	high := 0.0
 	for i := 1; i < days; i++ {
 		preClose = prices[i-1].Close
 		atr = trs[i-1].ATR
 		unit.End = prices[i].Timestamp
 		if !isDeal {
-			if prices[i].High > (preClose+BreakCo*atr) && prices[i].Close > (preClose+BreakCo*atr) {
+			if prices[i].High > (preClose+BreakCo*atr) || prices[i].Low < (preClose-BreakCo*atr) {
 				dealPrice = prices[i].Close
 				isDeal = true
+				high = dealPrice
 				continue
 			} else {
-				return unit, errors.New("")
+				return nil, errors.New("")
 			}
 		}
-		if prices[i].Low < (preClose - LossCo*atr) {
+		high = math.Max(high, preClose)
+		if prices[i].Low/dealPrice < 0.93 {
+			if prices[i].Open/dealPrice > 0.95 {
+				sellPrice = dealPrice * 0.94
+			} else {
+				sellPrice = prices[i].Open * 0.99
+			}
+			break
+		}
+		if prices[i].Open > dealPrice && prices[i].Low < high*0.8 {
+			unit.End = prices[i].Timestamp
+			sellPrice = high * 0.8
+			break
+		}
+		if prices[i].Low < (preClose-LossCo*atr) && (preClose-LossCo*atr)/dealPrice < 0.94 {
 			unit.End = prices[i].Timestamp
 			sellPrice = preClose - LossCo*atr
 			break
@@ -145,14 +162,19 @@ func handleTradeSignal(sig TradeSignal) (unit *tradeUnit, err error) {
 			sellPrice = preClose + ProfitCo*atr
 			break
 		}
-		if prices[i].Close/dealPrice < 0.94 {
-			sellPrice = prices[i].Close
-			break
-		}
 		sellPrice = prices[i].Close
+
+		// 手动止盈
+		if i%20 == 0 {
+			net := (sellPrice-dealPrice)/dealPrice + 1
+			std := math.Pow(1.247, float64(i/20))
+			if net < std {
+				break
+			}
+		}
 	}
 	if days < 2 || sellPrice == 0 {
-		return unit, fmt.Errorf("trade period is too short")
+		return nil, fmt.Errorf("trade period is too short")
 	}
 	unit.Period = int64((unit.End - unit.Start) / (24 * 3600))
 	unit.Net = (sellPrice - dealPrice) / dealPrice
@@ -366,7 +388,7 @@ func (v *vcp) Test(start, end string) {
 			count = append(count, opts.BarData{Value: pMap[k]})
 		}
 		bar := chart.BarCharts(percent, count)
-		barChart := chart.NewBarChart(v.Name)
+		barChart := chart.NewBarChart(v.Name + "_test")
 		barChart.BarPage(bar)
 		return nil
 	})

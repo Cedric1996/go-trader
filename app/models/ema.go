@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-17 15:51:51
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 14:37:09
+ * @Last Modified time: 2021-09-06 09:58:43
  */
 
 package models
@@ -34,6 +34,8 @@ func InitEmaTableIndexes() error {
 	indexModel := make([]mongo.IndexModel, 0)
 	indexModel = append(indexModel, mongo.IndexModel{
 		Keys: bson.D{{"timestamp", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"code", -1}},
 	})
 	_, err := database.Collection("ema").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
@@ -44,4 +46,25 @@ func InitEmaTableIndexes() error {
 
 func RemoveEma(t int64) error {
 	return RemoveMany(t, "ema")
+}
+
+func GetEma(opt SearchOption) ([]*Ema, error) {
+	var results []*Ema
+	cur, err := GetCursor(opt, "ema")
+	if err != nil {
+		return nil, err
+	}
+	for cur.Next(context.TODO()) {
+		var elem Ema
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }

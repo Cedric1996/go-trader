@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 08:58:02
+ * @Last Modified time: 2021-09-06 10:16:01
  */
 
 package models
@@ -225,7 +225,7 @@ func InitVcpTrIndexes() error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"period", -1}},
 	})
-	_, err := database.Collection("vcp_tr_strategy_02").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection("vcp_ema_strategy").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}

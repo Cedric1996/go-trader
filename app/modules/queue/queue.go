@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-04 15:11:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-23 11:20:29
+ * @Last Modified time: 2021-09-06 11:51:24
  */
 
 package queue
@@ -99,11 +99,10 @@ func (q *ChannelQueue) execute() {
 	for data := range q.dataChan {
 		res, err := q.executeFunc(data)
 		if err != nil {
-			fmt.Errorf("ChannelQueue: %s execute with error: %v", q.name, err)
+			// fmt.Errorf("ChannelQueue: %s execute with error: %v", q.name, err)
+			continue
 		}
-		if res != nil {
-			q.resChan <- res
-		}
+		q.resChan <- res
 	}
 	q.workerGroup.Done()
 }

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 16:55:08
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-04 14:50:46
+ * @Last Modified time: 2021-09-06 16:33:50
  */
 
 package models
@@ -166,4 +166,14 @@ func (s *StockPriceDay) CheckApproachHighest(code string, t int64, ratio float64
 	}
 	priceRatio := s.Close / highest[0].Price
 	return priceRatio <= (2-ratio) && priceRatio >= ratio, nil
+}
+
+func (s *StockPriceDay) CheckBreakHighest(code string, t int64) (bool, error) {
+	// filter tradeDay close price goes beyond highest too much
+	highest, err := GetHighest(code, t-24*3600, 1)
+	if err != nil || highest == nil {
+		return false, err
+	}
+	isBreak := s.Close > highest[0].Price
+	return isBreak, nil
 }
