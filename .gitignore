@@ -2,6 +2,7 @@
 .database/
 .result/
 .charts/
+.note/
 
 /go-trader
 /bin

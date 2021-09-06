@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-08 10:03:45
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 15:33:27
+ * @Last Modified time: 2021-09-05 22:36:05
  */
 
 package models
@@ -42,6 +42,28 @@ func GetTradeDay(isInit bool, limit, timestamp int64) ([]*TradeDay, error) {
 	if err != nil {
 		return results, err
 	}
+
+	for cur.Next(context.TODO()) {
+		var elem TradeDay
+		err := cur.Decode(&elem)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return results, err
+	}
+	return results, nil
+}
+
+func GetTradeDays(opt SearchOption) ([]*TradeDay, error) {
+	cur, err := GetCursor(opt, "trade_day")
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*TradeDay, 0)
 
 	for cur.Next(context.TODO()) {
 		var elem TradeDay

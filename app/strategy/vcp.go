@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-04 13:58:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-05 15:37:16
+ * @Last Modified time: 2021-09-06 09:08:01
  */
 
 package strategy
@@ -10,10 +10,10 @@ package strategy
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"sort"
 	"text/tabwriter"
-	"time"
 
 	chart "github.cedric1996.com/go-trader/app/charts"
 	"github.cedric1996.com/go-trader/app/util"
@@ -29,14 +29,15 @@ type vcp struct {
 	dates    []interface{}
 	percents []interface{}
 	netVal   []interface{}
+	periods  []interface{}
 }
 
 type tradeUnit struct {
-	Code   string    `bson:"code"`
-	Start  time.Time `bson:"start"`
-	End    time.Time `bson:"end"`
-	Period int64     `bson:"period"`
-	Net    float64   `bson:"net"`
+	Code   string  `bson:"code"`
+	Start  int64   `bson:"start"`
+	End    int64   `bson:"end"`
+	Period int64   `bson:"period"`
+	Net    float64 `bson:"net"`
 }
 
 func NewVcpStrategy(name string) *vcp {
@@ -48,11 +49,12 @@ func NewVcpStrategy(name string) *vcp {
 		dates:    make([]interface{}, 0),
 		percents: make([]interface{}, 0),
 		netVal:   make([]interface{}, 0),
+		periods:  make([]interface{}, 0),
 	}
 }
 
 func (v *vcp) Run() error {
-	queue, err := queue.NewQueue("vcp with true range", "", 1000, 1000, func(data interface{}) (interface{}, error) {
+	queue, err := queue.NewQueue("vcp with true range", "", 100, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(*models.Vcp)
 		unit, err := handleTradeSignal(TradeSignal{
 			Code:      datum.RpsBase.Code,
@@ -101,7 +103,7 @@ func handleTradeSignal(sig TradeSignal) (unit *tradeUnit, err error) {
 	}
 	unit = &tradeUnit{
 		Code:  sig.Code,
-		Start: time.Unix(sig.StartUnix, 0),
+		Start: sig.StartUnix,
 	}
 	prices, err := models.GetStockPriceList(opt)
 	if err != nil {
@@ -118,15 +120,16 @@ func handleTradeSignal(sig TradeSignal) (unit *tradeUnit, err error) {
 	// dealPrice := prices[0].Close
 	var preClose, sellPrice, atr, dealPrice float64
 	const BreakCo = 0.3
-	const LossCo = 0.3
-	const ProfitCo = 2.5
+	const LossCo = 1.5
+	const ProfitCo = 3
 	isDeal := false
 	for i := 1; i < days; i++ {
 		preClose = prices[i-1].Close
 		atr = trs[i-1].ATR
+		unit.End = prices[i].Timestamp
 		if !isDeal {
-			if prices[i].High > (preClose + BreakCo*atr) {
-				dealPrice = preClose + BreakCo*atr
+			if prices[i].High > (preClose+BreakCo*atr) && prices[i].Close > (preClose+BreakCo*atr) {
+				dealPrice = prices[i].Close
 				isDeal = true
 				continue
 			} else {
@@ -134,13 +137,16 @@ func handleTradeSignal(sig TradeSignal) (unit *tradeUnit, err error) {
 			}
 		}
 		if prices[i].Low < (preClose - LossCo*atr) {
-			unit.End = time.Unix(prices[i].Timestamp, 0)
+			unit.End = prices[i].Timestamp
 			sellPrice = preClose - LossCo*atr
 			break
 		}
 		if prices[i].High > (preClose + ProfitCo*atr) {
-			unit.End = time.Unix(prices[i].Timestamp, 0)
 			sellPrice = preClose + ProfitCo*atr
+			break
+		}
+		if prices[i].Close/dealPrice < 0.94 {
+			sellPrice = prices[i].Close
 			break
 		}
 		sellPrice = prices[i].Close
@@ -148,7 +154,7 @@ func handleTradeSignal(sig TradeSignal) (unit *tradeUnit, err error) {
 	if days < 2 || sellPrice == 0 {
 		return unit, fmt.Errorf("trade period is too short")
 	}
-	unit.Period = int64(unit.End.Sub(unit.Start).Hours() / 24)
+	unit.Period = int64((unit.End - unit.Start) / (24 * 3600))
 	unit.Net = (sellPrice - dealPrice) / dealPrice
 	return unit, nil
 }
@@ -166,6 +172,7 @@ func (v *vcp) vcpTr() *charts.Bar {
 	}
 	vcpMap := make(map[int64]stat)
 	nets := []interface{}{}
+	periods := []interface{}{}
 	opt := models.SearchOption{Limit: 1000, Skip: 0}
 	for {
 		vcpTrs, err := models.GetVcpTr(opt, v.Name)
@@ -173,7 +180,7 @@ func (v *vcp) vcpTr() *charts.Bar {
 			return nil
 		}
 		for _, data := range vcpTrs {
-			t := data.Start.Unix()
+			t := data.Start
 			_, ok := vcpMap[t]
 			if !ok {
 				vcpMap[t] = stat{Long: 0, Short: 0}
@@ -185,6 +192,8 @@ func (v *vcp) vcpTr() *charts.Bar {
 				long = 1
 			}
 			nets = append(nets, data.Net*100)
+			periods = append(periods, data.Period)
+
 			tmp := vcpMap[t]
 			tmp.Long += long
 			tmp.Short += short
@@ -196,16 +205,11 @@ func (v *vcp) vcpTr() *charts.Bar {
 		opt.Skip += 1000
 	}
 	v.netVal = nets
+	v.periods = periods
 	timestamps := v.dates
 	dates := []interface{}{}
 	percents := []opts.BarData{}
 	percentVal := []interface{}{}
-
-	// keys := make([]int, 0, len(vcpMap))
-	// for k := range vcpMap {
-	// 	keys = append(keys, int(k))
-	// }
-	// sort.Ints(keys)
 	for _, k := range timestamps {
 		k := k.(int64)
 		val, ok := vcpMap[k]
@@ -214,12 +218,9 @@ func (v *vcp) vcpTr() *charts.Bar {
 			percent := 100 * val.Long / (val.Long - val.Short)
 			percents = append(percents, opts.BarData{Value: percent})
 			percentVal = append(percentVal, percent)
-			// longs = append(longs, opts.BarData{Value: vcpMap[k].Long})
-			// shorts = append(shorts, opts.BarData{Value: vcpMap[k].Short})
 		}
 	}
 	v.percents = percentVal
-	// bar := chart.BarCharts(dates, longs, shorts)
 	bar := chart.BarCharts(dates, percents)
 	return bar
 }
@@ -293,7 +294,6 @@ func (v *vcp) net() *charts.Bar {
 		net = append(net, k)
 		count = append(count, opts.BarData{Value: pMap[k]})
 		// count = append(count, opts.ScatterData{Value: pMap[k]})
-
 	}
 	bar := chart.BarCharts(net, count)
 	return bar
@@ -301,6 +301,7 @@ func (v *vcp) net() *charts.Bar {
 
 func (v *vcp) Kelly() error {
 	nets := v.netVal
+	periods := v.periods
 	loss, profit, lossCount, netCount := 0.0, 0.0, 0.0, 0.0
 	for _, net := range nets {
 		net := net.(float64)
@@ -312,14 +313,126 @@ func (v *vcp) Kelly() error {
 			profit += net
 		}
 	}
+	var periodCount int64
+	periodCount = 0
+	for _, period := range periods {
+		period := period.(int64)
+		periodCount += period
+	}
 	winRate := netCount / (lossCount + netCount)
 	netRatio := (profit / netCount) / (-loss / lossCount)
-	expectation := netRatio*winRate - (1 - netRatio)
+	expectation := netRatio*winRate - (1 - winRate)
 	riskExpose := ((netRatio+1)*winRate - 1) / netRatio
-
+	tradePeriod := int(periodCount) / len(periods)
 	w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
-	fmt.Fprintln(w, "胜率\t赔率\t最大亏损\t期望\t")
-	fmt.Fprintf(w, "%.3f\t%.3f\t%.3f\t%.3f\t\n", winRate, netRatio, riskExpose, expectation)
+	fmt.Fprintln(w, "胜率\t赔率\t最大亏损\t期望\t平均持仓\t")
+	fmt.Fprintf(w, "%.3f\t%.3f\t%.3f\t%.3f\t%d\t\n", winRate, netRatio, riskExpose, expectation, tradePeriod)
 	w.Flush()
 	return nil
+}
+
+type position struct {
+	Code  string
+	Hold  float64
+	Net   float64
+	Start int64
+	End   int64
+}
+
+func (v *vcp) Test(start, end string) {
+	percent := []interface{}{}
+	count := []opts.BarData{}
+	pMap := make(map[int]int)
+	queue, _ := queue.NewQueue("test vcp with true range", "", 100, 1000, func(data interface{}) (interface{}, error) {
+		hold := v.test(start, end)
+		return hold, nil
+	}, func(datas []interface{}) error {
+		for _, data := range datas {
+			h := data.(float64)
+			hold := int(h)
+			_, ok := pMap[hold]
+			if !ok {
+				pMap[hold] = 0
+			}
+			pMap[hold] += 1
+		}
+		keys := make([]int, 0, len(pMap))
+		for k := range pMap {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+		for _, k := range keys {
+			percent = append(percent, k)
+			count = append(count, opts.BarData{Value: pMap[k]})
+		}
+		bar := chart.BarCharts(percent, count)
+		barChart := chart.NewBarChart(v.Name)
+		barChart.BarPage(bar)
+		return nil
+	})
+	for i := 0; i < 1000; i++ {
+		queue.Push("")
+	}
+	queue.Close()
+	// w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
+	// fmt.Fprintln(w, "净值\t交易次数\t")
+	// fmt.Fprintf(w, "%.3f\t%d\t\n", hold, len(positions))
+	// w.Flush()
+}
+
+func (v *vcp) test(start, end string) float64 {
+	dates, _ := models.GetTradeDays(models.SearchOption{
+		BeginAt:  util.ToTimeStamp(start),
+		EndAt:    util.ToTimeStamp(end),
+		Reversed: true,
+	})
+	positions := []interface{}{}
+	portfolio := make(map[string]position)
+	hold := 100.0
+	spare := 100.0
+	posCount := 0
+	posMax := 5
+	for i, date := range dates {
+		for k, pos := range portfolio {
+			if date.Timestamp == pos.End {
+				spare += pos.Hold * (1 + pos.Net)
+				hold += pos.Hold * pos.Net
+				positions = append(positions, pos)
+				posCount -= 1
+				delete(portfolio, k)
+			}
+		}
+		// do not open new pos in last day
+		if i == len(dates)-1 {
+			break
+		}
+		vcps, _ := models.GetVcpTrByDay(date.Timestamp, v.Name)
+		for i := 0; i < 5; i++ {
+			if len(vcps) < 2 {
+				break
+			}
+			ran := rand.Intn(len(vcps) - 1)
+			vcp := vcps[ran]
+			_, ok := portfolio[vcp.Code]
+			if ok {
+				continue
+			}
+			if posCount < posMax && spare > 2 {
+				posHold := spare / float64(posMax-posCount)
+				spare -= posHold
+				posCount += 1
+				portfolio[vcp.Code] = position{
+					Hold:  posHold,
+					Code:  vcp.Code,
+					Start: vcp.Start,
+					End:   vcp.End,
+					Net:   vcp.Net,
+				}
+			}
+		}
+	}
+	for _, pos := range portfolio {
+		hold += pos.Hold * pos.Net
+	}
+	return hold
 }

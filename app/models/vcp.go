@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-05 14:57:38
+ * @Last Modified time: 2021-09-06 08:58:02
  */
 
 package models
@@ -10,7 +10,6 @@ package models
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,11 +26,11 @@ type Vcp struct {
 }
 
 type VcpTr struct {
-	Code   string    `bson:"code"`
-	Start  time.Time `bson:"start"`
-	End    time.Time `bson:"end"`
-	Period int64     `bson:"period"`
-	Net    float64   `bson:"net"`
+	Code   string  `bson:"code"`
+	Start  int64   `bson:"start"`
+	End    int64   `bson:"end"`
+	Period int64   `bson:"period"`
+	Net    float64 `bson:"net"`
 }
 
 func GetVcpRange(code string, timestamp, period int64) (float64, error) {
@@ -104,6 +103,32 @@ func GetVcpTr(opt SearchOption, name string) ([]*VcpTr, error) {
 	if err != nil {
 		return nil, err
 	}
+	for cur.Next(context.TODO()) {
+		var elem VcpTr
+		err := cur.Decode(&elem)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return results, err
+	}
+	return results, nil
+}
+
+func GetVcpTrByDay(t int64, name string) ([]*VcpTr, error) {
+	// time.Unix(t, 0)
+	queryBson := bson.D{{"start", t}}
+	// queryBson := bson.D{{"start", bson.D{{"$eq", time.Unix(t, 0)}}}}
+
+	findOptions := options.Find()
+	cur, err := database.Collection(name).Find(context.TODO(), queryBson, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	var results []*VcpTr
 	for cur.Next(context.TODO()) {
 		var elem VcpTr
 		err := cur.Decode(&elem)
