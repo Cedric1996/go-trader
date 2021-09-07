@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 16:36:00
+ * @Last Modified time: 2021-09-07 08:21:47
  */
 package cmd
 
@@ -177,10 +177,10 @@ func runCount(c *cli.Context) error {
 
 func runInitIndex(c *cli.Context) error {
 	app.Init()
-	// if err := models.InitVcpTrIndexes(); err != nil {
+	// if err := models.InitStrategyIndexes("highest_rps_strategy"); err != nil {
 	// 	return err
 	// }
-	if err := models.InitHighestRpsTableIndexes(); err != nil {
+	if err := models.InitRpsTableIndexes(); err != nil {
 		return err
 	}
 	return nil

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 13:51:37
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-20 14:59:17
+ * @Last Modified time: 2021-09-07 08:09:13
  */
 
 package models
@@ -49,6 +49,8 @@ func InitRpsTableIndexes() error {
 	indexModel := make([]mongo.IndexModel, 0)
 	indexModel = append(indexModel, mongo.IndexModel{
 		Keys: bson.D{{"timestamp", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"code", -1}},
 	}, mongo.IndexModel{
 		Keys: bson.D{{"rps_120", -1}},
 	}, mongo.IndexModel{
@@ -102,6 +104,26 @@ func GetRps(t, period int64) ([]*Rps, error) {
 	queryBson := bson.D{{"timestamp", t}, {key, bson.D{{"$gte", 85}}}}
 	var results []*Rps
 	cur, err := database.Collection("rps").Find(context.TODO(), queryBson)
+	if err != nil {
+		return nil, err
+	}
+	for cur.Next(context.TODO()) {
+		var elem Rps
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &elem)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func GetRpsByOpt(opt SearchOption) ([]*Rps, error) {
+	var results []*Rps
+	cur, err := GetCursor(opt, "rps")
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 10:16:01
+ * @Last Modified time: 2021-09-07 08:19:00
  */
 
 package models
@@ -25,7 +25,7 @@ type Vcp struct {
 	Rps_120      int64   `bson:"rps_120, omitempty"`
 }
 
-type VcpTr struct {
+type TradeResult struct {
 	Code   string  `bson:"code"`
 	Start  int64   `bson:"start"`
 	End    int64   `bson:"end"`
@@ -97,14 +97,14 @@ func GetVcp(opt SearchOption) ([]*Vcp, error) {
 	return results, nil
 }
 
-func GetVcpTr(opt SearchOption, name string) ([]*VcpTr, error) {
-	var results []*VcpTr
+func GetTradeResult(opt SearchOption, name string) ([]*TradeResult, error) {
+	var results []*TradeResult
 	cur, err := GetCursor(opt, name)
 	if err != nil {
 		return nil, err
 	}
 	for cur.Next(context.TODO()) {
-		var elem VcpTr
+		var elem TradeResult
 		err := cur.Decode(&elem)
 		if err != nil {
 			return results, err
@@ -118,7 +118,7 @@ func GetVcpTr(opt SearchOption, name string) ([]*VcpTr, error) {
 	return results, nil
 }
 
-func GetVcpTrByDay(t int64, name string) ([]*VcpTr, error) {
+func GetTradeResultByDay(t int64, name string) ([]*TradeResult, error) {
 	// time.Unix(t, 0)
 	queryBson := bson.D{{"start", t}}
 	// queryBson := bson.D{{"start", bson.D{{"$eq", time.Unix(t, 0)}}}}
@@ -128,9 +128,9 @@ func GetVcpTrByDay(t int64, name string) ([]*VcpTr, error) {
 	if err != nil {
 		return nil, err
 	}
-	var results []*VcpTr
+	var results []*TradeResult
 	for cur.Next(context.TODO()) {
-		var elem VcpTr
+		var elem TradeResult
 		err := cur.Decode(&elem)
 		if err != nil {
 			return results, err

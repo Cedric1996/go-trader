@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-04 13:58:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 11:52:20
+ * @Last Modified time: 2021-09-06 23:16:14
  */
 
 package strategy
@@ -197,7 +197,7 @@ func (v *vcp) vcpTr() *charts.Bar {
 	periods := []interface{}{}
 	opt := models.SearchOption{Limit: 1000, Skip: 0}
 	for {
-		vcpTrs, err := models.GetVcpTr(opt, v.Name)
+		vcpTrs, err := models.GetTradeResult(opt, v.Name)
 		if err != nil {
 			return nil
 		}
@@ -428,7 +428,7 @@ func (v *vcp) test(start, end string) float64 {
 		if i == len(dates)-1 {
 			break
 		}
-		vcps, _ := models.GetVcpTrByDay(date.Timestamp, v.Name)
+		vcps, _ := models.GetTradeResultByDay(date.Timestamp, v.Name)
 		for i := 0; i < 5; i++ {
 			if len(vcps) < 2 {
 				break
