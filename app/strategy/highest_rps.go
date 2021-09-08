@@ -10,43 +10,41 @@ package strategy
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
-	"sort"
 	"text/tabwriter"
 
-	chart "github.cedric1996.com/go-trader/app/charts"
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/util"
-	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
 type highestRps struct {
-	Name     string
-	dates    []interface{}
-	percents []interface{}
-	netVal   []interface{}
-	periods  []interface{}
+	Name   string
+	RPS_20 int64
+	RPS_10 int64
+	RPS_5  int64
+	Net    float64
 }
 
-func NewHighestRpsStrategy(name string) *highestRps {
+func NewHighestRpsStrategy(name string, rps_20, rps_10, rps_5 int64) *highestRps {
 	if len(name) == 0 {
 		name = "highest_rps_strategy"
 	}
 	return &highestRps{
-		Name:     name,
-		dates:    make([]interface{}, 0),
-		percents: make([]interface{}, 0),
-		netVal:   make([]interface{}, 0),
-		periods:  make([]interface{}, 0),
+		Name:   name,
+		RPS_20: rps_20,
+		RPS_10: rps_10,
+		RPS_5:  rps_5,
+		Net:    1.0,
 	}
 }
 
 func (v *highestRps) Run() error {
 	queue, err := queue.NewQueue("highest with rps", "", 100, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(*models.HighestRps)
-		unit, _ := highestRpsSignal(TradeSignal{
+		unit, _ := v.highestRpsSignal(TradeSignal{
 			Code:      datum.RpsBase.Code,
 			StartUnix: datum.RpsBase.Timestamp,
 		})
@@ -85,7 +83,7 @@ func (v *highestRps) Run() error {
 	return nil
 }
 
-func highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err error) {
+func (v *highestRps) highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err error) {
 	opt := models.SearchOption{
 		Code:     sig.Code,
 		BeginAt:  sig.StartUnix,
@@ -95,39 +93,56 @@ func highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err error) {
 		Code:  sig.Code,
 		Start: sig.StartUnix,
 	}
+	rps, err := models.GetRpsByOpt(opt)
+	if err != nil || len(rps) == 0 {
+		return nil, err
+	}
+	if rps[0].Rps_20 < 90 {
+		return nil, fmt.Errorf("")
+	}
+
 	prices, err := models.GetStockPriceList(opt)
 	if err != nil {
 		return nil, err
 	}
-	rps, err := models.GetRpsByOpt(opt)
-	if err != nil {
-		return nil, err
-	}
+	// trs, err := models.GetTruesRange(opt)
+	// if err != nil {
+	// 	return unit, err
+	// }
 	days := len(prices)
 	if len(prices) > len(rps) {
 		days = len(rps)
 	}
+
 	// dealPrice := prices[0].Close
+	// var preClose, sellPrice, atr, dealPrice float64
 	var sellPrice, dealPrice float64
+
 	// const LossCo = 1
+	// const ProfitCo = 3
 	isDeal := false
-	for i := 0; i < days; i++ {
+	for i := 2; i < days; i++ {
+		// preClose = prices[i-1].Close
+		// atr = trs[i-1].ATR
 		unit.End = prices[i].Timestamp
 		if !isDeal {
-			if rps[i].Rps_10 > 0 && rps[i].Rps_5 > 0 {
-				dealPrice = prices[i].Close
+			// if rps[i-1].Rps_20 >= 90 {
+			if prices[i-1].Close != prices[i-1].HighLimit {
+				dealPrice = prices[i-1].Close
 				isDeal = true
-				continue
 			} else {
 				return nil, errors.New("nil")
 			}
+			// continue
+			// } else {
+			// 	return nil, errors.New("nil")
+			// }
 		}
-		if prices[i].Low/dealPrice < 0.93 {
-			if prices[i].Open/dealPrice > 0.95 {
-				sellPrice = dealPrice * 0.94
-			} else {
-				sellPrice = prices[i].Open * 0.99
-			}
+		if prices[i].Open/dealPrice < 0.94 {
+			sellPrice = prices[i].Open
+			break
+		} else if prices[i].Low/dealPrice < 0.95 {
+			sellPrice = dealPrice * 0.94
 			break
 		}
 		if i > 0 && rps[i-1].Rps_20 < 85 {
@@ -135,17 +150,18 @@ func highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err error) {
 			sellPrice = prices[i].Open
 			break
 		}
-		sellPrice = prices[i].Close
-		// 手动止盈
-		// if i%20 == 0 {
-		// 	net := (sellPrice-dealPrice)/dealPrice + 1
-		// 	std := math.Pow(1.247, float64(i/20))
-		// 	if net < std {
-		// 		break
-		// 	}
+		// if prices[i].Low < (preClose-LossCo*atr) && (preClose-LossCo*atr)/dealPrice < 0.94 {
+		// 	unit.End = prices[i].Timestamp
+		// 	sellPrice = preClose - LossCo*atr
+		// 	break
 		// }
+		// if prices[i].High > (preClose + ProfitCo*atr) {
+		// 	sellPrice = preClose + ProfitCo*atr
+		// 	break
+		// }
+		sellPrice = prices[i].Close
 	}
-	if days < 2 || sellPrice == 0 {
+	if days < 3 || sellPrice == 0 {
 		return nil, fmt.Errorf("trade period is too short")
 	}
 	unit.Period = int64((unit.End - unit.Start) / (24 * 3600))
@@ -164,8 +180,6 @@ func (v *highestRps) Kelly() error {
 		nets = append(nets, data.Net*100)
 		periods = append(periods, data.Period)
 	}
-	// nets := v.netVal
-	// periods := v.periods
 	loss, profit, lossCount, netCount := 0.0, 0.0, 0.0, 0.0
 	for _, net := range nets {
 		net := net.(float64)
@@ -204,44 +218,33 @@ type TestResult struct {
 }
 
 func (v *highestRps) Test(start, end string) {
-	percent := []interface{}{}
-	count := []opts.BarData{}
-	pMap := make(map[int]int)
+	// pMap := make(map[int]int)
 	queue, _ := queue.NewQueue("test highest with rps", "", 100, 1000, func(data interface{}) (interface{}, error) {
-		hold := v.test(start, end)
-		return hold, nil
+		testResult := v.test(start, end)
+		return testResult, nil
 	}, func(datas []interface{}) error {
+		// w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
+		// fmt.Fprintf(w, "回测区间: %s  -  %s\n", start, end)
+		// fmt.Fprintln(w, "收益率\t胜率\t赔率\t最大回撤\t平均持仓\t")
+		hold, winRate, netRatio, drawdown, period := 0.0, 0.0, 0.0, 0.0, 0.0
 		for _, data := range datas {
-			h := data.(float64)
-			hold := int(h)
-			_, ok := pMap[hold]
-			if !ok {
-				pMap[hold] = 0
-			}
-			pMap[hold] += 1
+			h := data.(TestResult)
+			hold += h.hold
+			winRate += h.winRate
+			netRatio += h.netRatio
+			drawdown += h.drawdown
+			period += h.period
 		}
-		keys := make([]int, 0, len(pMap))
-		for k := range pMap {
-			keys = append(keys, k)
-		}
-		sort.Ints(keys)
-		for _, k := range keys {
-			percent = append(percent, k)
-			count = append(count, opts.BarData{Value: pMap[k]})
-		}
-		bar := chart.BarCharts(percent, count)
-		barChart := chart.NewBarChart(v.Name + "_test")
-		barChart.BarPage(bar)
+		length := float64(len(datas))
+		// fmt.Fprintf(w, "%.3f\t%.3f\t%.3f\t%.3f\t%.2f\t\n", hold/length, winRate/length, netRatio/length, drawdown/length, period/length)
+		// w.Flush()
+		v.Net *= (hold / length / 100.0)
 		return nil
 	})
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		queue.Push("")
 	}
 	queue.Close()
-	// w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
-	// fmt.Fprintln(w, "净值\t交易次数\t")
-	// fmt.Fprintf(w, "%.3f\t%d\t\n", hold, len(positions))
-	// w.Flush()
 }
 
 func (v *highestRps) test(start, end string) TestResult {
@@ -253,14 +256,15 @@ func (v *highestRps) test(start, end string) TestResult {
 	testResult := TestResult{
 		hold: 100.0,
 	}
-	nets := []interface{}{}
 	periods := []interface{}{}
 	positions := []interface{}{}
 	portfolio := make(map[string]position)
-	hold := 100.0
+
+	hold, maxHold, drawdown := 100.0, 0.0, 1000.0
 	spare := 100.0
 	posCount := 0
 	posMax := 5
+	loss, profit, lossCount, netCount := 0.0, 0.0, 0.0, 0.0
 	for i, date := range dates {
 		for k, pos := range portfolio {
 			if date.Timestamp == pos.End {
@@ -268,8 +272,14 @@ func (v *highestRps) test(start, end string) TestResult {
 				hold += pos.Hold * pos.Net
 				positions = append(positions, pos)
 				posCount -= 1
-				nets = append(nets, pos.Net*100)
 				periods = append(periods, (pos.End-pos.Start)/(3600*24))
+				if pos.Net < 0 {
+					lossCount++
+					loss += pos.Net
+				} else {
+					netCount++
+					profit += pos.Net
+				}
 				delete(portfolio, k)
 			}
 		}
@@ -301,9 +311,34 @@ func (v *highestRps) test(start, end string) TestResult {
 				}
 			}
 		}
+		tmp := 0.0
+		for _, pos := range portfolio {
+			tmp += pos.Hold
+		}
+		tmp = tmp + spare
+		maxHold = math.Max(tmp, maxHold)
+		drawdown = math.Min(tmp/maxHold, drawdown)
 	}
 	for _, pos := range portfolio {
 		hold += pos.Hold * pos.Net
+		if pos.Net < 0 {
+			lossCount++
+			loss += pos.Net
+		} else {
+			netCount++
+			profit += pos.Net
+		}
 	}
+	var periodCount int64
+	periodCount = 0
+	for _, period := range periods {
+		period := period.(int64)
+		periodCount += period
+	}
+	testResult.hold = hold
+	testResult.winRate = netCount / (lossCount + netCount)
+	testResult.netRatio = (profit / netCount) / (-loss / lossCount)
+	testResult.period = float64(periodCount) / float64(len(periods))
+	testResult.drawdown = drawdown
 	return testResult
 }

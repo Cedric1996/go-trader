@@ -66,7 +66,7 @@ func InitStrategyIndexes(name string) error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"period", -1}},
 	})
-	_, err := database.Collection("name").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection(name).Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}

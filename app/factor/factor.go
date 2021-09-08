@@ -58,6 +58,7 @@ func InitFactorByDate(date string) error {
 		NewHighLowIndexFactor("nh_nl", date),
 		NewTrueRangeFactor(date, 13),
 		NewTrendFactor(date, 60, 0.95, 0.75, 2.0),
+		NewHighestRpsFactor(date, 0.95, 2.0),
 	}
 	for _, f := range factors {
 		if err := f.Run(); err != nil {
