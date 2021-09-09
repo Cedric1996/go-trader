@@ -8,6 +8,7 @@
 package factor
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -107,7 +108,7 @@ func (f *highestFactor) execute() error {
 			Timestamp: f.timestamp,
 		})
 		if err != nil || len(prices) < int(f.period) {
-			return nil, err
+			return nil, errors.New("")
 		}
 
 		calMaxAndMin := func() (float64, float64) {

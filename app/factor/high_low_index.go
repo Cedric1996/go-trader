@@ -8,6 +8,7 @@
 package factor
 
 import (
+	"errors"
 	"fmt"
 
 	"github.cedric1996.com/go-trader/app/models"
@@ -70,7 +71,7 @@ func (f *highLowIndexFactor) execute() error {
 			return nil, err
 		}
 		if len(lows) <= 1 || len(highs) <= 1 {
-			return nil, nil
+			return nil, errors.New("")
 		}
 		if len(lows) != len(highs) {
 			fmt.Printf("cal nh_nl error, code: %s, high: %d, low: %d\n", lows[0].Code, len(highs), len(lows))

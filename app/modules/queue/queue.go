@@ -71,7 +71,7 @@ func (q *ChannelQueue) Push(data Data) {
 // Run starts to run the queue
 func (q *ChannelQueue) Run() {
 	q.timer = time.Now()
-	fmt.Printf("ChannelQueue: %s Starting:\n", q.name)
+	// fmt.Printf("ChannelQueue: %s Starting:\n", q.name)
 	go q.handle()
 	for i := 0; i < q.workerNum; i++ {
 		q.workerGroup.Add(1)
@@ -91,7 +91,7 @@ func (q *ChannelQueue) Close() {
 		}
 	}
 	fmt.Printf("ChannelQueue: %s execute %d tasks, date: %s\n", q.name, q.finishNum, q.date)
-	fmt.Printf("Total time: %s\n", time.Since(q.timer).String())
+	// fmt.Printf("Total time: %s\n", time.Since(q.timer).String())
 }
 
 // Execute starts worker to execute task
@@ -130,7 +130,7 @@ func (q *ChannelQueue) handle() {
 			}
 		}
 	}
-	fmt.Printf("handle %d data in channel queue %s, then task will be finished..\n", count, q.name)
+	// fmt.Printf("handle %d data in channel queue %s, then task will be finished..\n", count, q.name)
 	q.finishNum += count
 	q.finishChan <- true
 }

@@ -8,6 +8,8 @@
 package factor
 
 import (
+	"errors"
+
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/service"
@@ -48,7 +50,7 @@ func (f *emaFactor) run() error {
 			Limit: count,
 		})
 		if err != nil || len(prices) <= MAX_MA_RANGE {
-			return nil, nil
+			return nil, errors.New("")
 		}
 		if int64(len(prices)) != count {
 			count = int64(len(prices))

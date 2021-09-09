@@ -55,6 +55,10 @@ func InitHighestRpsTableIndexes() error {
 	return nil
 }
 
+func RemoveHighestRps(t int64) error {
+	return RemoveMany(t, "highest_rps")
+}
+
 func InitStrategyIndexes(name string) error {
 	indexModel := make([]mongo.IndexModel, 0)
 	indexModel = append(indexModel, mongo.IndexModel{

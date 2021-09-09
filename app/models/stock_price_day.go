@@ -57,10 +57,15 @@ func InsertStockPriceDay(stocks []interface{}) error {
 }
 
 func InitStockTableIndexes() error {
-	indexModel := mongo.IndexModel{
-		Keys: bson.D{{"code", 1}, {"high", -1}},
-	}
-	_, err := database.Collection("stock").Indexes().CreateOne(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	indexModel := make([]mongo.IndexModel, 0)
+	indexModel = append(indexModel, mongo.IndexModel{
+		Keys: bson.D{{"timestamp", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"code", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"high", -1}},
+	})
+	_, err := database.Collection("stock").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}

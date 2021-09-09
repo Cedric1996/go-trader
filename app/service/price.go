@@ -7,6 +7,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -39,11 +40,11 @@ func GetPricesByDay(code, date string, count int) ([]*models.Price, error) {
  */
 func InitStockPriceByDay(date string) error {
 	isInit := false
-	initStockQueue, err := queue.NewQueue("init", date, 200, 1000, func(data interface{}) (interface{}, error) {
+	initStockQueue, err := queue.NewQueue("init", date, 100, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
 		stocks, err := GetPricesByDay(code, date, 1)
 		if err != nil || len(stocks) == 0 {
-			return nil, err
+			return nil, errors.New("")
 		}
 		return models.StockPriceDay{
 			Code:  code,

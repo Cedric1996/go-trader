@@ -2,12 +2,8 @@
  * @Author: cedric.jia
  * @Date: 2021-08-26 12:24:45
  * @Last Modified by: cedric.jia
-<<<<<<< HEAD
- * @Last Modified time: 2021-08-30 22:15:40
-=======
- * @Last Modified time: 2021-09-05 15:39:38
->>>>>>> c323eaa84447f4a6deed3c0c467598b7ccb560c7
-*/
+ * @Last Modified time: 2021-09-08 15:21:20
+ */
 
 package service
 

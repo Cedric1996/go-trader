@@ -49,8 +49,7 @@ func (f *HighestRpsFactor) Run() error {
 }
 
 func (f *HighestRpsFactor) Clean() error {
-	// return models.RemoveVcp(f.timestamp)
-	return nil
+	return models.RemoveHighestRps(f.timestamp)
 }
 
 func (f *HighestRpsFactor) execute() error {

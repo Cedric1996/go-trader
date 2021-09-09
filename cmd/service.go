@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-07 08:21:47
+ * @Last Modified time: 2021-09-08 15:40:46
  */
 package cmd
 
@@ -57,6 +57,7 @@ var (
 			subcmdPositionNew,
 			subcmdCalPosition,
 			subcmdHoldPosition,
+			subcmdPosHighestRps,
 		},
 	}
 
@@ -119,7 +120,6 @@ func runStockPriceDaily(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
 	}
-	// dates := []string{"2021-08-27"}
 	for _, day := range dates {
 		fmt.Printf("begin init stock price by day: %s\n", day)
 		if err := service.InitStockPriceByDay(day); err != nil {
@@ -180,7 +180,7 @@ func runInitIndex(c *cli.Context) error {
 	// if err := models.InitStrategyIndexes("highest_rps_strategy"); err != nil {
 	// 	return err
 	// }
-	if err := models.InitRpsTableIndexes(); err != nil {
+	if err := models.InitStockTableIndexes(); err != nil {
 		return err
 	}
 	return nil

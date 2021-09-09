@@ -8,6 +8,7 @@
 package factor
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -63,22 +64,22 @@ func (f *TrendFactor) execute() error {
 		code := datum.code
 		priceDay, err := models.GetStockPriceList(models.SearchOption{Code: code, Timestamp: f.timestamp})
 		if err != nil || priceDay == nil {
-			return nil, err
+			return nil, errors.New("")
 		}
 		if volume := priceDay[0].GetVolume(); volume < f.volume {
-			return nil, err
+			return nil, errors.New("")
 		}
 
 		isApproached, err := priceDay[0].CheckApproachHighest(code, f.timestamp, f.highest_ratio)
 		if err != nil || !isApproached {
-			return nil, err
+			return nil, errors.New("")
 		}
 		vcp, err := models.GetVcpRange(code, f.timestamp, f.period)
 		if err != nil || vcp > f.vcp_ratio {
-			return nil, err
+			return nil, errors.New("")
 		}
 		if err := f.valuationFilter(code, 80); err != nil {
-			return nil, err
+			return nil, errors.New("")
 		}
 		return models.Vcp{
 			RpsBase: models.RpsBase{

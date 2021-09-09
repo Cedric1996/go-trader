@@ -41,6 +41,7 @@ func CleanFactorByDate(date string) error {
 		NewRpsFactor("rps", 120, 0, date),
 		NewTrendFactor(date, 0, 0, 0, 0),
 		NewTrueRangeFactor(date, 13),
+		NewHighestRpsFactor(date, 0.95, 2.0),
 	}
 	for _, f := range factors {
 		if err := f.Clean(); err != nil {
