@@ -35,12 +35,12 @@ func CleanFactorByDate(date string) error {
 		return err
 	}
 	factors := []Factor{
-		NewEmaFactor(date, 1),
-		NewHighLowIndexFactor("nh_nl", date),
+		// NewEmaFactor(date, 1),
+		// NewHighLowIndexFactor("nh_nl", date),
 		NewHighestFactor("highest", date, 120),
 		NewRpsFactor("rps", 120, 0, date),
-		NewTrendFactor(date, 0, 0, 0, 0),
-		NewTrueRangeFactor(date, 13),
+		// NewTrendFactor(date, 0, 0, 0, 0),
+		// NewTrueRangeFactor(date, 13),
 		NewHighestRpsFactor(date, 0.95, 2.0),
 	}
 	for _, f := range factors {
@@ -53,12 +53,12 @@ func CleanFactorByDate(date string) error {
 
 func InitFactorByDate(date string) error {
 	factors := []Factor{
-		NewEmaFactor(date, 1),
+		// NewEmaFactor(date, 1),
 		NewHighestFactor("highest", date, 120),
 		NewRpsFactor("rps", 120, 85, date),
-		NewHighLowIndexFactor("nh_nl", date),
-		NewTrueRangeFactor(date, 13),
-		NewTrendFactor(date, 60, 0.95, 0.75, 2.0),
+		// NewHighLowIndexFactor("nh_nl", date),
+		// NewTrueRangeFactor(date, 13),
+		// NewTrendFactor(date, 60, 0.95, 0.75, 2.0),
 		NewHighestRpsFactor(date, 0.95, 2.0),
 	}
 	for _, f := range factors {

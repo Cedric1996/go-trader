@@ -71,7 +71,7 @@ func RemoveHighestByCode(code string) error {
 
 func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {
 	queryBson := bson.D{{"code", opt.Code}, {"timestamp", bson.D{{"$lte", opt.Timestamp}}}}
-	findOptions := options.Find().SetLimit(opt.Limit)
+	findOptions := options.Find().SetLimit(opt.Limit).SetSort(bson.D{{"timestamp", -1}})
 	var results []*StockPriceDay
 	cur, err := database.Collection("stock").Find(context.TODO(), queryBson, findOptions)
 	if err != nil {

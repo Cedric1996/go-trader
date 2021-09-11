@@ -8,9 +8,8 @@
 /bin
 /dist
 /docs
-/app/strategy
 
 .DS_Store
 
 *.xmind
-cmd/strategy.go
+cmd/
