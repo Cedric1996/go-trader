@@ -9,6 +9,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -18,6 +19,7 @@ import (
 	ctx "github.cedric1996.com/go-trader/app/context"
 	"github.cedric1996.com/go-trader/app/fetcher"
 	"github.cedric1996.com/go-trader/app/models"
+	"github.cedric1996.com/go-trader/app/strategy"
 	"github.cedric1996.com/go-trader/app/util"
 )
 
@@ -25,33 +27,46 @@ const (
 	PortfolioPath = ".result/"
 )
 
-type Position struct {
-	positionType string  `json:"position_type"`
-	code         string  `json:"code"`
-	volume       float64 `json:"volume"`
-	price        float64 `json:"price"`
-	profitPrice  float64 `json:"profit_price"`
-	lossPrice    float64 `json:"loss_price"`
+type position struct {
+	Code         string  `json:"code"`
+	Price        float64 `json:"price"`
+	BeginAt 	 string `json:"begin"`
+}
+
+type portfolio struct {
+	Data []*position `json:"data"`
 }
 
 func ReadPortfolio(fileName string) ([]*models.Position, error) {
 	return nil, nil
 }
 
-func GetPortfolio(fileName string) error {
+func GetPortfolio(fileName string, t int64) error {
 	if err := syncPortfolio(); err != nil {
 		return err
 	}
-	fileName = PortfolioPath + fileName
-	portfolio, err := models.GetPortfolio(1)
-	if err != nil {
+	path :=  PortfolioPath + fileName
+	file, _ := ioutil.ReadFile(path)
+	var po portfolio
+	if err := json.Unmarshal([]byte(file), &po);err != nil {
 		return err
 	}
-	data, err := json.Marshal(portfolio)
-	if err != nil {
-		return err
+	date, _ := models.GetTradeDay(true, 1 ,t)
+	if len(date) == 0 {
+		return errors.New("invalid trade date")
 	}
-	return writeJSON(fileName, data)
+	fmt.Printf("持仓日期: %s\n", util.ToDate(t))
+	w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
+	fmt.Fprintln(w, "股票代码\t名称\t止盈\t止损\t")
+	for _ , pos := range po.Data {
+		res, err := strategy.HighestRpsPos(pos.Code,  util.ParseDate(pos.BeginAt).Unix(), t)
+		if err != nil {
+			continue
+		}
+		fmt.Fprintf(w, "%s\t%s\t%.2f\t%.2f\t\n", res.Code, res.Name, res.SellPrice, res.LossPrice)
+	}
+	w.Flush()
+	return nil
 }
 
 func GetPositionSignal() error {
@@ -73,28 +88,28 @@ func GetPositionSignal() error {
 }
 
 func NewPosition(fileName string, isShort bool) error {
-	path := PortfolioPath
-	path += fileName
-	positionType := "open"
-	if isShort {
-		positionType = "close"
-	}
-	data := readJSON(path, func(data map[string]interface{}) bool {
-		t, ok := data["position_type"]
-		if !ok || t != positionType {
-			return false
-		}
-		return true
-	})
-	if data == nil {
-		return fmt.Errorf("read position file error: %v", path)
-	}
-	if err := models.OpenPositions(data); err != nil {
-		return err
-	}
-	if err := syncPortfolio(); err != nil {
-		return err
-	}
+	// path := PortfolioPath
+	// path += fileName
+	// positionType := "open"
+	// if isShort {
+	// 	positionType = "close"
+	// }
+	// data := readJSON(path, func(data map[string]interface{}) bool {
+	// 	t, ok := data["position_type"]
+	// 	if !ok || t != positionType {
+	// 		return false
+	// 	}
+	// 	return true
+	// })
+	// if data == nil {
+	// 	return fmt.Errorf("read position file error: %v", path)
+	// }
+	// if err := models.OpenPositions(data); err != nil {
+	// 	return err
+	// }
+	// if err := syncPortfolio(); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 

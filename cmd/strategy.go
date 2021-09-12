@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-09 09:30:48
+ * @Last Modified time: 2021-09-16 12:51:41
  */
 package cmd
 
@@ -12,10 +12,12 @@ import (
 	"text/tabwriter"
 
 	"github.cedric1996.com/go-trader/app"
+	"github.cedric1996.com/go-trader/app/factor"
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.cedric1996.com/go-trader/app/strategy"
 	"github.cedric1996.com/go-trader/app/util"
+	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/urfave/cli"
 )
 
@@ -52,6 +54,8 @@ var (
 		Usage: "",
 		Flags: []cli.Flag{
 			cli.StringFlag{Name: "date,d"},
+			cli.BoolFlag{Name: "init,i"},
+
 		},
 		Action: runHighestRpsPos,
 	}
@@ -60,8 +64,17 @@ var (
 func runHighestRpsPos(c *cli.Context) error {
 	app.Init()
 	date := c.String("date")
+	init := c.Bool("init")
 	if len(date) == 0 {
 		return nil
+	}
+	if init {
+		if err := service.InitStockPriceByDay(date); err != nil {
+			return fmt.Errorf("execute init stock price fail, please check it: %s", err)
+		}
+		if err := factor.InitPosByDate(date); err != nil {
+			return err
+		}
 	}
 	v := strategy.NewHighestRpsStrategy("", date)
 	datas := []string{}
@@ -78,6 +91,11 @@ func runHighestRpsPos(c *cli.Context) error {
 	w.Flush()
 	if err := service.GenerateVcpFile(datas); err != nil {
 		return err
+	}
+	if init {
+		if err := factor.CleanPosByDate(date); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -99,7 +117,7 @@ func runVcpTr(c *cli.Context) error {
 	}
 	nums := []string{"02"}
 	
-	// nums := []string{"01", "02", "03", "04", "05", "06", "07", "08"}
+	// nums := []string{"01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"}
 	res := []*testResult{}
 	for _, s := range nums {
 		res = append(res, vcpTrTest(s, 1, 10))
@@ -128,11 +146,11 @@ func vcpTrTest(num string, posMax, lossMax int) *testResult{
 	netFunc := func() (float64, float64) {
 		v.Net = 1.0
 		v.DrawBack = 1.0
-		// start := util.ParseDate("2019-04-01") 
+		start := util.ParseDate("2019-04-01") 
 		// start := util.ParseDate("2019-04-10")
 		// start := util.ParseDate("2019-04-11")
 
-		start := util.ParseDate("2019-04-06")
+		// start := util.ParseDate("2019-04-06")
 		// start := util.ParseDate("2019-09-01")
 		end := start.AddDate(0, 0, 13)
 		for i := 0; i < 29; i++ {
@@ -164,7 +182,7 @@ func vcpTrTest(num string, posMax, lossMax int) *testResult{
 
 func runHighestRps(c *cli.Context) error {
 	app.Init()
-	name := "highest_rps_strategy_10"
+	name := "highest_rps_strategy_16"
 
 	v := strategy.NewHighestRpsStrategy(name, "")
 	run := c.Bool("run")
@@ -176,35 +194,26 @@ func runHighestRps(c *cli.Context) error {
 			return fmt.Errorf("execute vcp tr strategy fail, please check it", err)
 		}
 	}
+	nums := []string{"14"}
+	// nums := []string{"01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"}
 
-	// taskQueue := queue.NewTaskQueue("highest test", 10, func(data interface{}) error {
-	// 	num := data.(string)
-	// 	r := highestRpsTest(num)
-	// 	fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f\n",r.num,  r.net, r.drawBack)
-	// 	return nil
-	// }, func(dateChan *chan interface{}) {
-	// 	// nums := []string{"09"}
-	// 	nums := []string{"01", "02", "03", "04", "05", "06", "07", "08","09"}
-	// 	for _, num := range nums {
-	// 		*dateChan <- num
-	// 	}
-	// })
-	// if err := taskQueue.Run(); err != nil {
-	// 	return err
-	// }
-	nums := []string{"05"}
-	
+	// nums := []string{}
 	// nums := []string{"01", "02", "03", "04", "05", "06", "07", "08"}
 	res := []*testResult{}
 	for _, s := range nums {
+		// res = append(res, highestRpsTest(s, 4, 10))
+		res = append(res, highestRpsTest(s, 5, 10))
 		res = append(res, highestRpsTest(s, 6, 10))
-		res = append(res, highestRpsTest(s, 7, 10))
-		res = append(res, highestRpsTest(s, 8, 10))
+		// res = append(res, highestRpsTest(s, 7, 10))
+		// res = append(res, highestRpsTest(s, 8, 10))
+		// res = append(res, highestRpsTest(s, 9, 10))
+		// res = append(res, highestRpsTest(s, 10, 10))
 	}
 	for _, r := range res {
-	fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d\n",r.num,  r.net, r.drawBack, r.posMax, r.lossMax)
+		fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d\n",r.num,  r.net, r.drawBack, r.posMax, r.lossMax)
+	// chs = append(chs, r.chart)
 	}
-
+	// v.WinRateByDate("2021-06-01",14)
 	return nil
 }
 
@@ -214,6 +223,7 @@ type testResult struct {
 	drawBack float64
 	posMax int
 	lossMax int
+	chart *charts.Line
 }
 
 func highestRpsTest(num string, posMax, lossMax int) *testResult{
@@ -225,14 +235,15 @@ func highestRpsTest(num string, posMax, lossMax int) *testResult{
 		v.Net = 1.0
 		v.DrawBack = 1.0
 		// start := util.ParseDate("2019-04-01") 
-		// start := util.ParseDate("2019-04-10")
+		start := util.ParseDate("2019-04-12")
 		// start := util.ParseDate("2019-04-11")
 
+		// start := util.ParseDate("2020-01-01") 
 		// start := util.ParseDate("2019-04-06")
 		// start := util.ParseDate("2019-09-01")
-		start := util.ParseDate("2021-01-03")
-		end := start.AddDate(0, 0, 13)
-		for i := 0; i < 8; i++ {
+		// start := util.ParseDate("2021-01-03")
+		end := start.AddDate(0, 0, 14)
+		for i := 0; i < 29; i++ {
 			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
 			// v.Test(util.ToDate(start.AddDate(0, 0, 7).Unix()), util.ToDate(end.AddDate(0, 0, 7).Unix()))
 			v.Test(util.ToDate(start.AddDate(0, 0, 15).Unix()), util.ToDate(end.AddDate(0, 0, 15).Unix()),posMax, lossMax)
@@ -256,5 +267,6 @@ func highestRpsTest(num string, posMax, lossMax int) *testResult{
 		drawBack: drawBackTotals/float64(count),
 		posMax: posMax,
 		lossMax: lossMax,
+		// chart: v.Chart(),
 	}
 }

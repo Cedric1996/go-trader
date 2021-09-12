@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 16:34:56
+ * @Last Modified time: 2021-09-11 23:05:49
  */
 
 package cmd
@@ -31,6 +31,7 @@ var (
 			subCmdTaskVerifyRefDate,
 			subCmdTaskTrend,
 			subCmdTaskEma,
+			subCmdTaskMa,
 			subCmdTaskHighLowIndex,
 			subCmdTaskTrueRange,
 		},
@@ -70,6 +71,12 @@ var (
 		Name:   "ema",
 		Usage:  "moving average tasks",
 		Action: runEmaFactor,
+	}
+
+	subCmdTaskMa = cli.Command{
+		Name:   "ma",
+		Usage:  "moving average tasks",
+		Action: runMaFactor,
 	}
 
 	subCmdTaskHighLowIndex = cli.Command{
@@ -187,7 +194,7 @@ func runVerifyRefDate(c *cli.Context) error {
 
 func runTrendFactor(c *cli.Context) error {
 	app.Init()
-	taskQueue := queue.NewTaskQueue("trend", 50, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("trend", 1, func(data interface{}) error {
 		date := data.(string)
 		f := factor.NewHighestRpsFactor(date, 0.95, 2.0)
 		if err := f.Run(); err != nil {
@@ -197,8 +204,8 @@ func runTrendFactor(c *cli.Context) error {
 	}, func(dateChan *chan interface{}) {
 		// t := util.ParseDate("2019-03-07").Unix()
 		// t := util.ParseDate("2020-06-01").Unix()
-		t := util.ParseDate("2021-09-02").Unix()
-		tradeDays, err := models.GetTradeDay(true, 700, t)
+		t := util.ParseDate("2021-09-14").Unix()
+		tradeDays, err := models.GetTradeDay(true, 1, t)
 		if err != nil {
 			return
 		}
@@ -232,6 +239,21 @@ func runEmaFactor(c *cli.Context) error {
 		}
 	})
 	if err := taskQueue.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runMaFactor(c *cli.Context) error {
+	app.Init()
+	// if err:= models.InitEmaTableIndexes("ma");err!=nil {
+	// 	return err
+	// }
+	f := factor.NewMaFactor("2019-01-01", 700)
+	// if err := f.Run(); err != nil {
+	// 	return err
+	// }
+	if err := f.Output(); err != nil {
 		return err
 	}
 	return nil

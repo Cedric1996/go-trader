@@ -186,7 +186,7 @@ func handleTradeSignal(sig TradeSignal) (unit *TradeUnit, err error) {
 }
 
 func (v *vcp) Output() error {
-	barChart := chart.NewBarChart(v.Name)
+	barChart := chart.NewChart(v.Name)
 	barChart.BarPage(v.highLowIndex(), v.vcpTr(), v.net())
 	return nil
 }

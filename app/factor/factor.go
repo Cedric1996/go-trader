@@ -20,6 +20,28 @@ type Factor interface {
 }
 
 func CleanFactorByDate(date string) error {
+	factors := []Factor{
+		NewEmaFactor(date, 1),
+		NewHighLowIndexFactor("nh_nl", date),
+		NewHighestFactor("highest", date, 120),
+		NewRpsFactor("rps", 120, 0, date),
+		NewTrendFactor(date, 0, 0, 0, 0),
+		NewTrueRangeFactor(date, 13),
+		NewHighestRpsFactor(date, 0.95, 2.0),
+	}
+	return cleanFactor(date, factors)
+}
+
+func CleanPosByDate(date string) error {
+	factors := []Factor{
+		NewHighestFactor("highest", date, 120),
+		NewRpsFactor("rps", 120, 0, date),
+		NewHighestRpsFactor(date, 0.95, 2.0),
+	}
+	return cleanFactor(date, factors)
+}
+
+func cleanFactor(date string, factors []Factor) error {
 	t := util.ToTimeStamp(date)
 	dates, err := models.GetTradeDay(true, 1, t)
 	if err != nil {
@@ -34,15 +56,6 @@ func CleanFactorByDate(date string) error {
 	if err := models.DeleteStockPriceDayByDay(t); err != nil {
 		return err
 	}
-	factors := []Factor{
-		// NewEmaFactor(date, 1),
-		// NewHighLowIndexFactor("nh_nl", date),
-		NewHighestFactor("highest", date, 120),
-		NewRpsFactor("rps", 120, 0, date),
-		// NewTrendFactor(date, 0, 0, 0, 0),
-		// NewTrueRangeFactor(date, 13),
-		NewHighestRpsFactor(date, 0.95, 2.0),
-	}
 	for _, f := range factors {
 		if err := f.Clean(); err != nil {
 			return err
@@ -53,14 +66,27 @@ func CleanFactorByDate(date string) error {
 
 func InitFactorByDate(date string) error {
 	factors := []Factor{
-		// NewEmaFactor(date, 1),
+		NewEmaFactor(date, 1),
 		NewHighestFactor("highest", date, 120),
 		NewRpsFactor("rps", 120, 85, date),
-		// NewHighLowIndexFactor("nh_nl", date),
-		// NewTrueRangeFactor(date, 13),
-		// NewTrendFactor(date, 60, 0.95, 0.75, 2.0),
+		NewHighLowIndexFactor("nh_nl", date),
+		NewTrueRangeFactor(date, 13),
+		NewTrendFactor(date, 60, 0.95, 0.75, 2.0),
 		NewHighestRpsFactor(date, 0.95, 2.0),
 	}
+	return initFactor(factors)
+}
+
+func InitPosByDate(date string) error {
+	factors := []Factor{
+		NewHighestFactor("highest", date, 120),
+		NewRpsFactor("rps", 120, 85, date),
+		NewHighestRpsFactor(date, 0.95, 2.0),
+	}
+	return initFactor(factors)
+}
+
+func initFactor(factors []Factor) error {
 	for _, f := range factors {
 		if err := f.Run(); err != nil {
 			return err

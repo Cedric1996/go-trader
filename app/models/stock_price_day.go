@@ -24,6 +24,7 @@ type SearchOption struct {
 	Reversed  bool
 	SortBy    string
 	Skip      int64
+	Opts []bson.E
 }
 
 func UpdateStockPriceDay(c *ctx.Context) error {

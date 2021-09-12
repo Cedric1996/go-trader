@@ -96,6 +96,10 @@ var (
 	subcmdCalPosition = cli.Command{
 		Name:   "cal",
 		Usage:  "calculate portfolio",
+		Flags: []cli.Flag{
+			cli.StringFlag{Name: "file,f"},
+			cli.StringFlag{Name: "date,d"},
+		},
 		Action: runCalPortfolio,
 	}
 	subcmdHoldPosition = cli.Command{
@@ -226,7 +230,18 @@ func runGetWeekVcp(c *cli.Context) error {
 
 func runCalPortfolio(c *cli.Context) error {
 	app.Init()
-	if err := service.GetPortfolio("portfolio"); err != nil {
+	filename := c.String("file")
+	date := c.String("date")
+	var unix int64
+	if len(filename) == 0 {
+		filename = "portfolio.json"
+	}
+	if len(date) == 0 {
+		unix = time.Now().AddDate(0, 0, -1).Unix()
+	} else {
+		unix = util.ParseDate(date).Unix()
+	}
+	if err := service.GetPortfolio(filename, unix); err != nil {
 		return err
 	}
 	return nil

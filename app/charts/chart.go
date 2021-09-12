@@ -17,19 +17,19 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
-type BarChart struct {
+type Chart struct {
 	filename string
 }
 
-func NewBarChart(filename string) *BarChart {
+func NewChart(filename string) *Chart {
 	if len(filename) == 0 {
 		filename = "bar"
 	}
-	return &BarChart{filename: filename}
+	return &Chart{filename: filename}
 }
 
 // generate random data for bar chart
-// func (b *BarChart) GenerateBarItems(datas []interface{}) []opts.BarData {
+// func (b *Chart) GenerateBarItems(datas []interface{}) []opts.BarData {
 // 	items := make([]opts.BarData, 0)
 // 	for _, data := range datas {
 // 		items = append(items, opts.BarData{Value: data})
@@ -56,22 +56,41 @@ func BarCharts(xAxis []interface{}, series ...[]opts.BarData) *charts.Bar {
 
 func ScatterCharts(xAxis []interface{}, series ...[]opts.ScatterData) *charts.Scatter {
 	// create a new bar instance
-	bar := charts.NewScatter()
+	scatter := charts.NewScatter()
 	// set some global options like Title/Legend/ToolTip or anything else
-	bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{
+	scatter.SetGlobalOptions(charts.WithTitleOpts(opts.Title{
 		Title:    "vcp tr strategy",
 		Subtitle: "bar chart for vcp_tr_strategy",
 	}))
 
 	// Put data into instance
-	bar.SetXAxis(xAxis)
+	scatter.SetXAxis(xAxis)
 	for i, sery := range series {
-		bar.AddSeries(fmt.Sprintf("Category %d", i), sery)
+		scatter.AddSeries(fmt.Sprintf("Category %d", i), sery)
 	}
-	return bar
+	return scatter
 }
 
-func (b *BarChart) BarPage(charts ...components.Charter) {
+func LineChart(xAxis []interface{},series ...[]opts.LineData) *charts.Line {
+	line := charts.NewLine()
+	line.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: "smooth style",
+		}),
+	)
+	line.SetXAxis(xAxis)
+	for i, sery := range series {
+		line.AddSeries(fmt.Sprintf("Category %d", i), sery,charts.WithLineChartOpts(
+			opts.LineChart{
+				Smooth: true,
+			}),
+		)
+	}
+	return line
+}
+
+
+func (b *Chart) BarPage(charts ...components.Charter) {
 	page := components.NewPage()
 	page.AddCharts(charts...)
 

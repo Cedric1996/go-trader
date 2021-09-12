@@ -59,6 +59,10 @@ func GetCursor(opt SearchOption, name string) (*mongo.Cursor, error) {
 	if opt.Timestamp > 0 {
 		queryBson = append(queryBson, bson.E{"timestamp", opt.Timestamp})
 	}
+	if len(opt.Opts) > 0 {
+		queryBson = append(queryBson, opt.Opts...)
+
+	}
 	cur, err := database.Collection(name).Find(context.TODO(), queryBson, findOptions)
 	if err != nil {
 		return nil, err

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:21:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-23 23:43:45
+ * @Last Modified time: 2021-09-16 15:11:11
  */
 
 package factor
@@ -57,7 +57,6 @@ func (f *highLowIndexFactor) execute() error {
 		highs, err := models.GetHighestList(models.SearchOption{
 			BeginAt: t2,
 			EndAt:   t1,
-			SortBy:  "code",
 		}, "highest")
 		if err != nil {
 			return nil, err
@@ -65,7 +64,6 @@ func (f *highLowIndexFactor) execute() error {
 		lows, err := models.GetHighestList(models.SearchOption{
 			BeginAt: t2,
 			EndAt:   t1,
-			SortBy:  "code",
 		}, "lowest")
 		if err != nil {
 			return nil, err
@@ -74,7 +72,7 @@ func (f *highLowIndexFactor) execute() error {
 			return nil, errors.New("")
 		}
 		if len(lows) != len(highs) {
-			fmt.Printf("cal nh_nl error, code: %s, high: %d, low: %d\n", lows[0].Code, len(highs), len(lows))
+			fmt.Printf("cal nh_nl error, start: %s, end: %s, high: %d, low: %d\n", dates[0].Date,dates[1].Date, len(highs), len(lows))
 			return nil, err
 		}
 
