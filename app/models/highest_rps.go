@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-06 16:24:22
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 23:14:11
+ * @Last Modified time: 2021-09-23 10:22:17
  */
 
 package models
@@ -67,6 +67,8 @@ func InitStrategyIndexes(name string) error {
 		Keys: bson.D{{"end", -1}},
 	}, mongo.IndexModel{
 		Keys: bson.D{{"net", -1}},
+	},mongo.IndexModel{
+		Keys: bson.D{{"max", -1}},
 	}, mongo.IndexModel{
 		Keys: bson.D{{"period", -1}},
 	})
@@ -75,6 +77,10 @@ func InitStrategyIndexes(name string) error {
 		return err
 	}
 	return nil
+}
+
+func DropHighestRps(name string) error {
+	return database.Collection(name).Drop(context.Background())
 }
 
 func GetHighestRps(opt SearchOption) ([]*HighestRps, error) {

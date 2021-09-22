@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:21:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-16 15:11:11
+ * @Last Modified time: 2021-09-23 11:00:26
  */
 
 package factor
@@ -121,7 +121,7 @@ func (f *highLowIndexFactor) execute() error {
 func (f *highLowIndexFactor) initByCode() error {
 	queue, _ := queue.NewQueue("init new_high_new_low index by code", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
-		highs, err := models.GetHighest(code, f.timestamp, 0)
+		highs, err := models.GetHighest(code, 120, f.timestamp, 0)
 		if err != nil {
 			return nil, err
 		}

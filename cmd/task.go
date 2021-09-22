@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-11 23:05:49
+ * @Last Modified time: 2021-09-24 10:00:27
  */
 
 package cmd
@@ -140,31 +140,18 @@ func runGetRps(c *cli.Context) error {
 
 func runHighestFactor(c *cli.Context) error {
 	app.Init()
+	models.InitHighestTableIndexes(60)
 	taskQueue := queue.NewTaskQueue("highest", 50, func(data interface{}) error {
-		date := data.(string)
-		// rps := factor.NewRpsFactor("rps", 120, 85, date)
-		// if err := rps.Run(); err != nil {
-		// 	return err
-		// }
-		// ema := factor.NewEmaFactor(date, 1)
-		// if err := ema.Run(); err != nil {
-		// 	return err
-		// }
-		vcp := factor.NewTrendFactor(date, 60, 0.95, 0.75, 2.0)
-		if err := vcp.Run(); err != nil {
+		code := data.(string)
+		f := factor.NewHighestFactor("highest_60", "2021-09-22", 60)
+		if err := f.Init(code); err != nil {
 			return err
 		}
-		fmt.Printf("rps task has been done, date: %s\n", date)
 		return nil
 	}, func(dateChan *chan interface{}) {
-		// t := util.ParseDate("2020-06-01").Unix()
-		t := util.ParseDate("2019-03-07").Unix()
-		tradeDays, err := models.GetTradeDay(true, 1, t)
-		if err != nil {
-			return
-		}
-		for _, date := range tradeDays {
-			*dateChan <- date.Date
+		stocks, _ := models.GetAllSecurities()
+		for _, stock := range stocks {
+			*dateChan <- stock.Code
 		}
 	})
 	if err := taskQueue.Run(); err != nil {
@@ -194,18 +181,22 @@ func runVerifyRefDate(c *cli.Context) error {
 
 func runTrendFactor(c *cli.Context) error {
 	app.Init()
+	if err := models.DropHighestRps("vcp_02"); err != nil {
+		return fmt.Errorf("drop collection: %s", err)
+	}
+	if err := models.InitVcpTableIndexes(); err != nil {
+		return err
+	}
 	taskQueue := queue.NewTaskQueue("trend", 1, func(data interface{}) error {
 		date := data.(string)
-		f := factor.NewHighestRpsFactor(date, 0.95, 2.0)
+		f := factor.NewTrendFactor(date, 60, 0.95, 0.80, 2.0)
 		if err := f.Run(); err != nil {
 			return err
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		// t := util.ParseDate("2019-03-07").Unix()
-		// t := util.ParseDate("2020-06-01").Unix()
-		t := util.ParseDate("2021-09-14").Unix()
-		tradeDays, err := models.GetTradeDay(true, 1, t)
+		t := util.ParseDate("2021-09-22").Unix()
+		tradeDays, err := models.GetTradeDay(true, 700, t)
 		if err != nil {
 			return
 		}

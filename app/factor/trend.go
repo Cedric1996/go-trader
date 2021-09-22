@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 15:35:18
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-01 10:58:06
+ * @Last Modified time: 2021-09-23 11:10:55
  */
 
 package factor
@@ -70,7 +70,7 @@ func (f *TrendFactor) execute() error {
 			return nil, errors.New("")
 		}
 
-		isApproached, err := priceDay[0].CheckApproachHighest(code, f.timestamp, f.highest_ratio)
+		isApproached, err := priceDay[0].CheckApproachHighest(code,f.period, f.timestamp, f.highest_ratio)
 		if err != nil || !isApproached {
 			return nil, errors.New("")
 		}

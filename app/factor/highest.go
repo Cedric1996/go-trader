@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 11:19:31
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-23 23:59:27
+ * @Last Modified time: 2021-09-23 11:00:21
  */
 
 package factor
@@ -79,10 +79,10 @@ func (f *highestFactor) Init(code string) error {
 			Timestamp: prices[i+period-1].Timestamp,
 		})
 	}
-	if err := models.InsertHighest(highest, "highest"); err != nil {
+	if err := models.InsertHighest(highest, fmt.Sprintf("highest_%d",f.period)); err != nil {
 		return err
 	}
-	if err := models.InsertHighest(lowest, "lowest"); err != nil {
+	if err := models.InsertHighest(lowest, fmt.Sprintf("lowest_%d",f.period)); err != nil {
 		return err
 	}
 	return nil
@@ -160,7 +160,7 @@ func (f *highestFactor) execute() error {
 func (f *highestFactor) initByCode() error {
 	queue, _ := queue.NewQueue("init highest data by code", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
-		highs, err := models.GetHighest(code, f.timestamp, 0)
+		highs, err := models.GetHighest(code, 120, f.timestamp, 0)
 		if err != nil {
 			return nil, err
 		}

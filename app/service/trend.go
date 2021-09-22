@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-30 10:35:17
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-31 22:23:44
+ * @Last Modified time: 2021-09-23 11:21:56
  */
 
 package service
@@ -39,8 +39,14 @@ func GetVcpByInterval(startDate string, interval int64) (map[string]int, error) 
 			codeMap[vcp.RpsBase.Code] = 1
 		}
 	}
-	// if err := GetNewVcp(tradeDay[0].Timestamp, &codeMap); err != nil {
-	// 	return nil, err
+	// for k, _ := range codeMap {
+	// 	rps, _ := models.GetRpsByOpt(models.SearchOption{
+	// 		Code: k,
+	// 		Limit: 1,
+	// 	})
+	// 	if rps[0].Rps_20 < 90 {
+	// 		delete(codeMap, k)
+	// 	}
 	// }
 	return codeMap, nil
 }

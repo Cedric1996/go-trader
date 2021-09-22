@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-04 13:58:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 23:16:14
+ * @Last Modified time: 2021-09-23 10:21:58
  */
 
 package strategy
@@ -41,6 +41,8 @@ type TradeUnit struct {
 	End    int64   `bson:"end"`
 	Period int64   `bson:"period"`
 	Net    float64 `bson:"net"`
+	Max   float64 `bson:"max"`
+
 }
 
 func NewVcpStrategy(name string) *vcp {
@@ -373,7 +375,7 @@ func (v *vcp) Test(start, end string,posMax,lossMax int) {
 	}, func(datas []interface{}) error {
 		w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
 		fmt.Fprintf(w, "回测区间: %s  -  %s\n", start, end)
-		// fmt.Fprintln(w, "收益率\t胜率\t赔率\t最大回撤\t平均持仓\t")
+		fmt.Fprintln(w, "收益率\t胜率\t赔率\t最大回撤\t平均持仓\t")
 		hold, winRate, netRatio, drawdown, period := 0.0, 0.0, 0.0, 0.0, 0.0
 		for _, data := range datas {
 			h := data.(TestResult)
@@ -384,11 +386,11 @@ func (v *vcp) Test(start, end string,posMax,lossMax int) {
 			period += h.period
 		}
 		length := float64(len(datas))
-		// fmt.Fprintf(w, "%.3f\t%.3f\t%.3f\t%.3f\t%.2f\t\n", hold/length, winRate/length, netRatio/length, drawdown/length, period/length)
+		fmt.Fprintf(w, "%.3f\t%.3f\t%.3f\t%.3f\t%.2f\t\n", hold/length, winRate/length, netRatio/length, drawdown/length, period/length)
 		w.Flush()
 		v.DrawBack = math.Min(v.DrawBack, hold/length/100.0)
 		v.Net *= (hold / length/100.0)
-		// fmt.Printf("累计收益率：%.3f\n", v.Net)
+		fmt.Printf("累计收益率：%.3f\n", v.Net)
 		return nil
 	})
 	for i := 0; i < 10; i++ {
@@ -475,12 +477,12 @@ func (v *vcp) test(start, end string, posMax,lossMax int) TestResult {
 	for _, pos := range portfolio {
 		prices, _ := models.GetStockPriceList(models.SearchOption{
 			Code:     pos.Code,
-			BeginAt:  util.ToTimeStamp(start),
+			BeginAt:  pos.Start,
 			EndAt:    util.ToTimeStamp(end),
 			Reversed: true,
 		})
 		len := len(prices)
-		pos.Net = (prices[len-1].Close - prices[0].Close) / prices[len-1].Close
+		pos.Net = (prices[len-1].Close - prices[0].Close) / prices[0].Close - 0.0013
 		hold += pos.Hold * pos.Net
 		if pos.Net < 0 {
 			lossCount++
