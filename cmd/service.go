@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-08 15:40:46
+ * @Last Modified time: 2021-09-24 16:41:52
  */
 package cmd
 
@@ -58,6 +58,7 @@ var (
 			subcmdCalPosition,
 			subcmdHoldPosition,
 			subcmdPosHighestRps,
+			subcmdPosVcp,
 		},
 	}
 

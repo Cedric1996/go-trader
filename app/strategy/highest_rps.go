@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-06 17:02:05
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 11:28:18
+ * @Last Modified time: 2021-09-24 17:49:07
  */
 
 package strategy
@@ -100,19 +100,9 @@ func (v *highestRps) highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err err
 	if err != nil || len(rps) == 0 {
 		return nil, err
 	}
-	// 01 90-95 %8
-	// if rps[0].Rps_20 < 90 || rps[0].Rps_20 > 95 {
-	// 02 86-90 %5
-	// 02 86-90 %5 %10
-	// 06 90+
-	// if rps[0].Rps_20 > 90 || rps[0].Rps_20 < 85 {
-	// 07 90-94
-	if rps[0].Rps_20 < 90 {
-		return nil, fmt.Errorf("")
-	}
 
-	if rps[0].Rps_5 > 95 || rps[0].Rps_10 > 95 {
-		return nil, fmt.Errorf("")
+	if rps[0].Rps_20 > 90 {
+		return nil, err
 	}
 
 	prices, err := models.GetStockPriceList(opt)
@@ -128,12 +118,8 @@ func (v *highestRps) highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err err
 		days = len(rps)
 	}
 
-	// dealPrice := prices[0].Close
 	var preClose, sellPrice, dealPrice float64
-	// var sellPrice, dealPrice float64
 
-	// const LossCo = 1
-	// const ProfitCo = 2
 	maxClose := 0.0
 	isDeal := false
 	for i := 1; i < days; i++ {
@@ -151,21 +137,23 @@ func (v *highestRps) highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err err
 				return nil, errors.New("nil")
 			}
 		}
-		if rps[i].Rps_5 < 90  && rps[i].Rps_10 < 90{
-			sellPrice = prices[i].Close
-			break
-		}
+		// if rps[i].Rps_5 < 90  && rps[i].Rps_10 < 90{
+		// 	sellPrice = prices[i].Close
+		// 	break
+		// }
 
-		if rps[i].Rps_5 > 98 {
-			sellPrice = prices[i].Close
+		// if rps[i].Rps_5 > 98 {
+		// 	sellPrice = prices[i].Close
+		// 	break
+		// }
+		
+		if prices[i].Open/dealPrice < 0.94 {
+			sellPrice = prices[i].Open
+			break
+		} else if prices[i].Low/dealPrice < 0.94 {
+			sellPrice = dealPrice * 0.94
 			break
 		}
-		// if prices[i].Open/dealPrice < 0.92 {
-		// 	sellPrice = prices[i].Open
-		// 	break
-		// } else if prices[i].Low/dealPrice < 0.92 {
-		// 	sellPrice = dealPrice * 0.92
-		// 	break
 		// }  else if prices[i].Close / maxClose < 0.92 {
 		// 	sellPrice = prices[i].Close
 		// 	break
@@ -174,16 +162,17 @@ func (v *highestRps) highestRpsSignal(sig TradeSignal) (unit *TradeUnit, err err
 		// 	sellPrice = preClose - LossCo*atr
 		// 	break
 		// }
+		if rps[i].Rps_5 + rps[i].Rps_10  == 0 {
+			sellPrice = prices[i].Close
+			break
+		}
+		// if rps[i-1].Rps_5 > rps[i].Rps_5 &&  rps[i].Rps_10 >=  rps[i-1].Rps_10 {
+		sum :=rps[i-1].Rps_5 + rps[i-1].Rps_10
+		if  sum >= 196 &&  rps[i].Rps_5 + rps[i].Rps_10 < sum {
+			sellPrice = prices[i].Close
+			break
+		}
 
-		// if prices[i].High > (preClose + ProfitCo*atr) {
-			// sellPrice = preClose + ProfitCo*atr
-			// break
-		// }
-
-		// if prices[i].High / dealPrice > 1.10 {
-		// 	sellPrice = dealPrice * 1.10
-		// 	break
-		// }
 		sellPrice = prices[i].Close
 	}
 	if days < 2 || sellPrice == 0 {
@@ -225,21 +214,12 @@ func (v *highestRps) Pos() ([]*Pos, error) {
 		if err != nil || len(rps) == 0 {
 			continue
 		}
-		// if rps[0].Rps_20 < 90 || rps[0].Rps_20 > 96 {
-		// if rps[0].Rps_20 > 94 || rps[0].Rps_20 < 90 {
-		if rps[0].Rps_20 < 86 || rps[0].Rps_20> 90{
-			continue
-		}
 		prices, err := models.GetStockPriceList(opt)
 		if err != nil {
 			continue
 		}
-		trs, err := models.GetTruesRange(opt)
-		if err != nil {
-			continue
-		}
-		var preClose, sellPrice, dealPrice, lossPrice float64
-		preClose = prices[0].Close
+		
+		var sellPrice, dealPrice, lossPrice float64
 		if prices[0].Close != prices[0].HighLimit {
 			dealPrice = prices[0].Close
 		}
@@ -247,7 +227,6 @@ func (v *highestRps) Pos() ([]*Pos, error) {
 			continue
 		}
 		lossPrice = dealPrice * 0.94
-		sellPrice = preClose + 2.5*trs[0].ATR
 		info, _ := models.GetSecurityByCode(opt.Code)
 		pos = append(pos, &Pos{
 			Code:      opt.Code,

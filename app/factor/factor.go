@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-05 14:10:35
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-24 00:00:12
+ * @Last Modified time: 2021-09-24 16:40:33
  */
 
 package factor
@@ -71,7 +71,7 @@ func InitFactorByDate(date string) error {
 		NewRpsFactor("rps", 120, 85, date),
 		NewHighLowIndexFactor("nh_nl", date),
 		NewTrueRangeFactor(date, 13),
-		NewTrendFactor(date, 60, 0.95, 0.75, 2.0),
+		NewTrendFactor(date, 60, 0.9, 0.80, 2.0),
 		NewHighestRpsFactor(date, 0.95, 2.0),
 	}
 	return initFactor(factors)

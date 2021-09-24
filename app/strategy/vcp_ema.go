@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-06 09:56:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 14:47:59
+ * @Last Modified time: 2021-09-24 17:53:51
  */
 
 package strategy
@@ -13,6 +13,7 @@ import (
 
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
+	"github.cedric1996.com/go-trader/app/util"
 )
 
 type vcpEma struct {
@@ -25,13 +26,14 @@ type vcpEma struct {
 	dates  []interface{}
 }
 
-func NewVcpEmaStrategy(name string) *vcpEma {
+func NewVcpEmaStrategy(name, date string) *vcpEma {
 	if len(name) == 0 {
 		name = "vcp_ema_strategy"
 	}
 	return &vcpEma{
 		Name:     name,
 		Net:      1.0,
+		Date:     date,
 		DrawBack: 1.0,
 		dates: make([]interface{},0),
 	}
@@ -159,4 +161,56 @@ func (v *vcpEma) vcpEmaTradeSignal(sig TradeSignal) (unit *TradeUnit) {
 	unit.Max = (maxClose - dealPrice) / dealPrice
 	unit.Net = (sellPrice - dealPrice) / dealPrice
 	return unit
+}
+
+func (v *vcpEma) Pos() ([]*Pos, error) {
+	t := util.ParseDate(v.Date).Unix()
+	pos := make([]*Pos, 0)
+	opt := models.SearchOption{
+		Timestamp: t,
+	}
+	datas, err := models.GetVcp(opt)
+	if err != nil {
+		return nil, err
+	}
+	for _, data := range datas {
+		opt.Code = data.RpsBase.Code
+		rps, err := models.GetRpsByOpt(opt)
+		if err != nil || len(rps) == 0 {
+			continue
+		}
+		if rps[0].Rps_120 <= rps[0].Rps_20  {
+			continue
+		}
+		if rps[0].Rps_20 < 90 || rps[0].Rps_5 >90 {
+			continue
+		}
+		prices, err := models.GetStockPriceList(opt)
+		if err != nil {
+			continue
+		}
+		
+		var lossPrice, dealPrice float64
+		if prices[0].Close / prices[0].HighLimit < 0.91 {
+			continue
+		}
+		if prices[0].Close != prices[0].HighLimit {
+			dealPrice = prices[0].Close
+		}
+		if dealPrice < 0.1 {
+			continue
+		}
+		lossPrice = dealPrice * 0.94
+		info, _ := models.GetSecurityByCode(opt.Code)
+		pos = append(pos, &Pos{
+			Code:      opt.Code,
+			Name:      info.DisplayName,
+			DealPrice: dealPrice,
+			LossPrice: lossPrice,
+			RPS_5: rps[0].Rps_5,
+			RPS_10: rps[0].Rps_10,
+			RPS_20: rps[0].Rps_20,
+		})
+	}
+	return pos, nil
 }

@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 13:21:27
+ * @Last Modified time: 2021-09-24 16:44:05
  */
 package cmd
 
@@ -55,9 +55,17 @@ var (
 		Flags: []cli.Flag{
 			cli.StringFlag{Name: "date,d"},
 			cli.BoolFlag{Name: "init,i"},
-
 		},
 		Action: runHighestRpsPos,
+	}
+
+	subcmdPosVcp = cli.Command{
+		Name:  "vcp",
+		Usage: "",
+		Flags: []cli.Flag{
+			cli.StringFlag{Name: "date,d"},
+		},
+		Action: runVcpPos,
 	}
 )
 
@@ -100,10 +108,35 @@ func runHighestRpsPos(c *cli.Context) error {
 	return nil
 }
 
+func runVcpPos(c *cli.Context) error {
+	app.Init()
+	date := c.String("date")
+	if len(date) == 0 {
+		return nil
+	}
+	v := strategy.NewVcpEmaStrategy("",date)
+	datas := []string{}
+	pos, err := v.Pos()
+	if err != nil {
+		return err
+	}
+	w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
+	fmt.Fprintln(w, "代码\t名称\t买入\t止盈\t止损\t5日强\t10日强\t20日强\t")
+	for _, v := range pos {
+		datas = append(datas, v.Code)
+		fmt.Fprintf(w, "%s\t%s\t%.2f\t%.2f\t%.2f\t%d\t%d\t%d\t\n", v.Code, v.Name, v.DealPrice, v.SellPrice, v.LossPrice, v.RPS_5, v.RPS_10, v.RPS_20)
+	}
+	w.Flush()
+	if err := service.GenerateVcpFile(datas); err != nil {
+		return err
+	}
+	return nil
+}
+
 func runVcpTr(c *cli.Context) error {
 	app.Init()
 	name := "vcp_ema_strategy_08"
-	v := strategy.NewVcpEmaStrategy(name)
+	v := strategy.NewVcpEmaStrategy(name,"")
 
 	run := c.Bool("run")
 	if run {
@@ -120,9 +153,6 @@ func runVcpTr(c *cli.Context) error {
 	nums := []string{"08"}
 	res := []*testResult{}
 	for _, s := range nums {
-		res = append(res, vcpTrTest(s, 1, 10000))
-		res = append(res, vcpTrTest(s, 2, 10000))
-		res = append(res, vcpTrTest(s, 3, 10000))
 		res = append(res, vcpTrTest(s, 4, 10000))
 	}
 	for _, r := range res {
@@ -141,8 +171,8 @@ func vcpTrTest(num string, posMax, lossMax int) *testResult{
 		v.Net = 1.0
 		v.DrawBack = 1.0
 		// start := util.ParseDate("2019-04-03") 
-		start := util.ParseDate("2021-01-03") 
-		end := start.AddDate(0, 8, 19)
+		start := util.ParseDate("2020-01-03") 
+		end := start.AddDate(1, 8, 19)
 		for i := 0; i < 1; i++ {
 			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
 			// v.Test(util.ToDate(start.AddDate(0, 0, 7).Unix()), util.ToDate(end.AddDate(0, 0, 7).Unix()))
