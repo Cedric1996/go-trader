@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-06 09:56:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 17:53:51
+ * @Last Modified time: 2021-09-24 22:07:48
  */
 
 package strategy
@@ -105,11 +105,15 @@ func (v *vcpEma) vcpEmaTradeSignal(sig TradeSignal) (unit *TradeUnit) {
 		return nil
 	}
 	// 08 90+
-	if rps[0].Rps_120 > rps[0].Rps_20  {
+	if rps[0].Rps_120 <= rps[0].Rps_20  {
 		return nil
 	}
 
-	// if rps[0].Rps_20 < 90 || rps[0].Rps_20 > 95{
+	if rps[0].Rps_20 < 90 || rps[0].Rps_20 > 95{
+		return nil
+	}
+
+	// if rps[0].Rps_5 < 90 {
 	// 	return nil
 	// }
 
@@ -182,7 +186,12 @@ func (v *vcpEma) Pos() ([]*Pos, error) {
 		if rps[0].Rps_120 <= rps[0].Rps_20  {
 			continue
 		}
-		if rps[0].Rps_20 < 90 || rps[0].Rps_5 >90 {
+	
+		if rps[0].Rps_20 < 90 || rps[0].Rps_20 > 95{
+			continue
+		}
+	
+		if rps[0].Rps_5 < 90 {
 			continue
 		}
 		prices, err := models.GetStockPriceList(opt)
@@ -191,9 +200,6 @@ func (v *vcpEma) Pos() ([]*Pos, error) {
 		}
 		
 		var lossPrice, dealPrice float64
-		if prices[0].Close / prices[0].HighLimit < 0.91 {
-			continue
-		}
 		if prices[0].Close != prices[0].HighLimit {
 			dealPrice = prices[0].Close
 		}

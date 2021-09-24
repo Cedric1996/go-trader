@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 16:44:05
+ * @Last Modified time: 2021-09-24 22:19:48
  */
 package cmd
 
@@ -153,7 +153,7 @@ func runVcpTr(c *cli.Context) error {
 	nums := []string{"08"}
 	res := []*testResult{}
 	for _, s := range nums {
-		res = append(res, vcpTrTest(s, 4, 10000))
+		res = append(res, vcpTrTest(s, 5, 10000))
 	}
 	for _, r := range res {
 	fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d\n",r.num,  r.net, r.drawBack, r.posMax, r.lossMax)
