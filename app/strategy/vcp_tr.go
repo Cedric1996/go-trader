@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-04 13:58:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-23 10:21:58
+ * @Last Modified time: 2021-09-25 15:31:50
  */
 
 package strategy
@@ -39,6 +39,12 @@ type TradeUnit struct {
 	Code   string  `bson:"code"`
 	Start  int64   `bson:"start"`
 	End    int64   `bson:"end"`
+	StartDate  string   `bson:"start_date"`
+	EndDate    string   `bson:"end_date"`
+	RPS_5 int64 `bson:"rps5"`
+	RPS_10 int64 `bson:"rps10"`
+	RPS_20 int64 `bson:"rps20"`
+	RPS_120 int64 `bson:"rps120"`
 	Period int64   `bson:"period"`
 	Net    float64 `bson:"net"`
 	Max   float64 `bson:"max"`

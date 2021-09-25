@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-05 22:14:02
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-23 15:17:00
+ * @Last Modified time: 2021-09-25 15:37:10
  */
 
 package strategy
@@ -64,7 +64,7 @@ func (v *Tester)Test(start, end string,posMax,lossMax int) {
 		}
 		// v.dates = append(v.dates,start)
 		// v.index = append(v.index,opts.LineData{Value: hold/length - 80.0})
-		// fmt.Printf("累计收益率：%.3f\n", v.Net)
+		fmt.Printf("累计收益率：%.3f\n", v.Net)
 		return nil
 	})
 	for i := 0; i < 10; i++ {

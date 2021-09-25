@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 15:35:18
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-23 11:10:55
+ * @Last Modified time: 2021-09-24 23:01:30
  */
 
 package factor
@@ -62,11 +62,16 @@ func (f *TrendFactor) execute() error {
 	queue, err := queue.NewQueue("trend", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(trendDatum)
 		code := datum.code
-		priceDay, err := models.GetStockPriceList(models.SearchOption{Code: code, Timestamp: f.timestamp})
+		priceDay, err := models.GetStockPriceList(models.SearchOption{Code: code, EndAt: f.timestamp, Limit:2})
 		if err != nil || priceDay == nil {
 			return nil, errors.New("")
 		}
 		if volume := priceDay[0].GetVolume(); volume < f.volume {
+			return nil, errors.New("")
+		}
+		vol := priceDay[0].Volume - priceDay[1].Volume
+		close := priceDay[0].Close - priceDay[1].Close
+		if float64(vol) * close < 0 {
 			return nil, errors.New("")
 		}
 
@@ -93,7 +98,7 @@ func (f *TrendFactor) execute() error {
 			Rps_120:      datum.rps,
 		}, nil
 	}, func(data []interface{}) error {
-		if err := models.InsertVcp(data); err != nil {
+		if err := models.InsertVcpNew(data); err != nil {
 			return err
 		}
 		return nil

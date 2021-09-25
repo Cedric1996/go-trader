@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 16:40:43
+ * @Last Modified time: 2021-09-24 23:03:53
  */
 
 package cmd
@@ -181,10 +181,10 @@ func runVerifyRefDate(c *cli.Context) error {
 
 func runTrendFactor(c *cli.Context) error {
 	app.Init()
-	if err := models.DropHighestRps("vcp"); err != nil {
+	if err := models.DropHighestRps("vcp_new"); err != nil {
 		return fmt.Errorf("drop collection: %s", err)
 	}
-	if err := models.InitVcpTableIndexes(); err != nil {
+	if err := models.InitVcpTableIndexes("vcp_new"); err != nil {
 		return err
 	}
 	taskQueue := queue.NewTaskQueue("trend", 1, func(data interface{}) error {
@@ -195,7 +195,7 @@ func runTrendFactor(c *cli.Context) error {
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2021-09-22").Unix()
+		t := util.ParseDate("2021-09-24").Unix()
 		tradeDays, err := models.GetTradeDay(true, 700, t)
 		if err != nil {
 			return

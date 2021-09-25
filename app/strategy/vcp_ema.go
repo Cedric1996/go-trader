@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-06 09:56:23
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 22:07:48
+ * @Last Modified time: 2021-09-25 15:48:57
  */
 
 package strategy
@@ -64,7 +64,7 @@ func (v *vcpEma) Run() error {
 		Skip:  0,
 	}
 	for {
-		datas, err := models.GetVcp(opt)
+		datas, err := models.GetVcpNew(opt)
 		if err != nil {
 			break
 		}
@@ -95,68 +95,73 @@ func (v *vcpEma) vcpEmaTradeSignal(sig TradeSignal) (unit *TradeUnit) {
 	if err != nil {
 		return nil
 	}
-	// emas, err := models.GetEma(opt)
-	// if err != nil {
-	// 	return nil
-	// }
 
 	rps, err := models.GetRpsByOpt(opt)
 	if err != nil || len(rps) == 0 {
 		return nil
 	}
-	// 08 90+
-	if rps[0].Rps_120 <= rps[0].Rps_20  {
+
+	if rps[0].Rps_20 > 0 {
 		return nil
 	}
 
-	if rps[0].Rps_20 < 90 || rps[0].Rps_20 > 95{
-		return nil
-	}
-
-	// if rps[0].Rps_5 < 90 {
-	// 	return nil
-	// }
+	unit.RPS_5 = rps[0].Rps_5
+	unit.RPS_10 = rps[0].Rps_10
+	unit.RPS_20 = rps[0].Rps_20
+	unit.RPS_120 = rps[0].Rps_120
 
 	days := len(prices)
-	if len(prices) > len(rps) {
+	if len(prices) != len(rps){
 		days = len(rps)
 	}
 	var sellPrice, dealPrice float64
 	maxClose := 0.0
+	var maxVolume int64
 	isDeal := false
 	for i := 1; i < days; i++ {
 		preClose := prices[i-1].Close
 		maxClose = math.Max(preClose, maxClose)
+		if prices[i].Volume > maxVolume {
+			maxVolume = prices[i].Volume
+		}
+
 		unit.End = prices[i].Timestamp
+		unit.EndDate = util.ToDate(prices[i].Timestamp)
 		unit.Period = int64(i)
 	
 		if !isDeal {
-			// 06 ma_12 buy
-			// ratio := prices[i-1].Close / prices[i-1].HighLimit
-			// if ratio > 0.91 && ratio < 0.94{
-			if prices[i-1].Close != prices[i-1].HighLimit {
-				dealPrice = prices[i-1].Close
+			ratio := prices[i].Open / prices[i].PreClose
+			if ratio > 0.97 && ratio < 1.03 &&  float64(prices[i].Volume) > 1.3 * float64(prices[i-1].Volume){
+				unit.StartDate = util.ToDate(prices[i].Timestamp)
+				// dealPrice = prices[i].Open * 1.01 
+				dealPrice = prices[i].Open
 				isDeal = true
 				continue
 			} else {
 				return nil
 			}
 		}
-		if prices[i].Open/dealPrice < 0.92 {
+		if prices[i].Open/dealPrice < 0.93 {
 			sellPrice = prices[i].Open
 			break
-		} else if prices[i].Low/dealPrice < 0.92 {
-			sellPrice = dealPrice * 0.92
+		} else if prices[i].Low/dealPrice < 0.93 {
+			sellPrice = dealPrice * 0.93
 			break
-		}  else if prices[i].Close / maxClose < 0.95 {
-			sellPrice = maxClose * 0.95
+		}  else if prices[i].Close/maxClose < 0.95 {
+			sellPrice = prices[i].Close
 			break
-		}
-		
-		if rps[i].Rps_5 < rps[i-1].Rps_5 && rps[i].Rps_10 > rps[i-1].Rps_10{
+		}  
+
+		if prices[i].Volume >= maxVolume && (prices[i].Close < maxClose || prices[i].Close < prices[i].Open){
 			sellPrice = prices[i].Close
 			break
 		}
+		
+		if prices[i].Volume >= prices[i-1].Volume && prices[i].Open > maxClose && prices[i].Close < prices[i].Open{
+			sellPrice = prices[i].Close
+			break
+		}
+		
 		sellPrice = prices[i].Close
 	}
 	if days < 2 || sellPrice == 0 {
@@ -173,7 +178,7 @@ func (v *vcpEma) Pos() ([]*Pos, error) {
 	opt := models.SearchOption{
 		Timestamp: t,
 	}
-	datas, err := models.GetVcp(opt)
+	datas, err := models.GetVcpNew(opt)
 	if err != nil {
 		return nil, err
 	}
@@ -183,17 +188,11 @@ func (v *vcpEma) Pos() ([]*Pos, error) {
 		if err != nil || len(rps) == 0 {
 			continue
 		}
-		if rps[0].Rps_120 <= rps[0].Rps_20  {
+		
+		if rps[0].Rps_20 > 0 || rps[0].Rps_5 == 0{
 			continue
 		}
-	
-		if rps[0].Rps_20 < 90 || rps[0].Rps_20 > 95{
-			continue
-		}
-	
-		if rps[0].Rps_5 < 90 {
-			continue
-		}
+
 		prices, err := models.GetStockPriceList(opt)
 		if err != nil {
 			continue

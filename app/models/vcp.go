@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 10:01:53
+ * @Last Modified time: 2021-09-25 11:15:05
  */
 
 package models
@@ -29,6 +29,8 @@ type TradeResult struct {
 	Code   string  `bson:"code"`
 	Start  int64   `bson:"start"`
 	End    int64   `bson:"end"`
+	StartDate  string   `bson:"start_date"`
+	EndDate    string   `bson:"end_date"`
 	Period int64   `bson:"period"`
 	Net    float64 `bson:"net"`
 }
@@ -72,6 +74,10 @@ func InsertVcp(datas []interface{}) error {
 	return InsertMany(datas, "vcp")
 }
 
+func InsertVcpNew(datas []interface{}) error {
+	return InsertMany(datas, "vcp_new")
+}
+
 func RemoveVcp(t int64) (err error) {
 	return RemoveMany(t, "vcp")
 }
@@ -97,6 +103,26 @@ func GetVcp(opt SearchOption) ([]*Vcp, error) {
 	return results, nil
 }
 
+func GetVcpNew(opt SearchOption) ([]*Vcp, error) {
+	var results []*Vcp
+	cur, err := GetCursor(opt, "vcp_new")
+	if err != nil {
+		return nil, err
+	}
+	for cur.Next(context.TODO()) {
+		var elem Vcp
+		err := cur.Decode(&elem)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return results, err
+	}
+	return results, nil
+}
 func GetTradeResult(opt SearchOption, name string) ([]*TradeResult, error) {
 	var results []*TradeResult
 	cur, err := GetCursor(opt, name)
@@ -196,7 +222,7 @@ func (v *Vcp) String() string {
 	return fmt.Sprintf("Code: %s", v.RpsBase.Code)
 }
 
-func InitVcpTableIndexes() error {
+func InitVcpTableIndexes(name string) error {
 	indexModel := make([]mongo.IndexModel, 0)
 	indexModel = append(indexModel, mongo.IndexModel{
 		Keys: bson.D{{"timestamp", -1}},
@@ -207,7 +233,7 @@ func InitVcpTableIndexes() error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"rps_120", -1}},
 	})
-	_, err := database.Collection("vcp").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection(name).Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}

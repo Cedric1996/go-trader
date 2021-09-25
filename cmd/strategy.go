@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 22:19:48
+ * @Last Modified time: 2021-09-25 15:42:34
  */
 package cmd
 
@@ -153,7 +153,8 @@ func runVcpTr(c *cli.Context) error {
 	nums := []string{"08"}
 	res := []*testResult{}
 	for _, s := range nums {
-		res = append(res, vcpTrTest(s, 5, 10000))
+		res = append(res, vcpTrTest(s, 4, 10000))
+		// res = append(res, vcpTrTest(s, 5, 10000))
 	}
 	for _, r := range res {
 	fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d\n",r.num,  r.net, r.drawBack, r.posMax, r.lossMax)
@@ -172,6 +173,7 @@ func vcpTrTest(num string, posMax, lossMax int) *testResult{
 		v.DrawBack = 1.0
 		// start := util.ParseDate("2019-04-03") 
 		start := util.ParseDate("2020-01-03") 
+		// end := start.AddDate(2, 5, 19)
 		end := start.AddDate(1, 8, 19)
 		for i := 0; i < 1; i++ {
 			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
@@ -224,13 +226,6 @@ func runHighestRps(c *cli.Context) error {
 		res = append(res, highestRpsTest(s, 3, 1000))
 		res = append(res, highestRpsTest(s, 4, 1000))
 		res = append(res, highestRpsTest(s, 5, 1000))
-		// res = append(res, highestRpsTest(s, 4, 1000))
-		// res = append(res, highestRpsTest(s, 5, 1000))
-		// res = append(res, highestRpsTest(s, 1, 5))
-		// res = append(res, highestRpsTest(s, 1, 4))
-		// res = append(res, highestRpsTest(s, 1, 3))
-		// res = append(res, highestRpsTest(s, 1, 2))
-		// res = append(res, highestRpsTest(s, 1, 1))
 	}
 	for _, r := range res {
 		fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d, 平均收益: %.3f\n",r.num,  r.net, r.drawBack, r.posMax, r.lossMax, r.netAvg)
