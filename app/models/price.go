@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 17:25:36
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-30 16:16:18
+ * @Last Modified time: 2021-09-26 12:39:22
  */
 
 package models
@@ -10,6 +10,7 @@ package models
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	ctx "github.cedric1996.com/go-trader/app/context"
@@ -60,6 +61,35 @@ func ParsePriceInfo(c *ctx.Context) []*Price {
 		price.LowLimit, _ = strconv.ParseFloat(val[9], 10)
 		price.Avg, _ = strconv.ParseFloat(val[10], 10)
 		price.PreClose, _ = strconv.ParseFloat(val[11], 10)
+		prices = append(prices, price)
+	}
+	return prices
+}
+
+func ParsePriceHourInfo(c *ctx.Context) []*Price {
+	resBody := c.ResBody
+	code := c.Params["code"]
+	if code == "" {
+		fmt.Errorf("Parse price info with error.")
+		return nil
+	}
+	vals := resBody.GetVals()
+	prices := make([]*Price, 0)
+	for _, val := range vals {
+		if len(val) < 7 {
+			continue
+		}
+		ts := strings.Split(val[0], " ")
+		t, _ := time.Parse(time.RFC3339, fmt.Sprintf("%sT%s:00Z",ts[0], ts[1]))
+		price := &Price{}
+		price.Timestamp = t.Unix()
+		price.Day = t.String()
+		price.Open, _ = strconv.ParseFloat(val[1], 10)
+		price.Close, _ = strconv.ParseFloat(val[2], 10)
+		price.High, _ = strconv.ParseFloat(val[3], 10)
+		price.Low, _ = strconv.ParseFloat(val[4], 10)
+		price.Volume, _ = strconv.ParseInt(val[5], 10, 64)
+		price.Money, _ = strconv.ParseInt(val[6], 10, 64)
 		prices = append(prices, price)
 	}
 	return prices

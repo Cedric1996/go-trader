@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-04-17 16:36:57
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-22 13:32:18
+ * @Last Modified time: 2021-09-26 12:35:13
  */
 package service
 
@@ -24,6 +24,17 @@ type fetchStockDailyDatum struct {
 }
 
 // Count should not be greater than 5000.
+func GetPricesByWeek(code, date string, count int) ([]*models.Price, error) {
+	c := &ctx.Context{}
+	if err := fetcher.GetPrice(c, code, date, fetcher.Week, count); err != nil {
+		fmt.Printf("ERROR: GetPricesByWeek error: %s\n", err)
+		return nil, err
+	}
+	prices := models.ParsePriceHourInfo(c)
+	return prices, nil
+}
+
+// Count should not be greater than 5000.
 func GetPricesByDay(code, date string, count int) ([]*models.Price, error) {
 	c := &ctx.Context{}
 	if err := fetcher.GetPrice(c, code, date, fetcher.Day, count); err != nil {
@@ -31,6 +42,18 @@ func GetPricesByDay(code, date string, count int) ([]*models.Price, error) {
 		return nil, err
 	}
 	prices := models.ParsePriceInfo(c)
+	return prices, nil
+}
+
+// Count should not be greater than 5000.
+func GetPricesByHour(code, date string, count int) ([]*models.Price, error) {
+	// date = date + " 10:00:00"
+	c := &ctx.Context{}
+	if err := fetcher.GetPrice(c, code, date, fetcher.ThirtyMinute, count); err != nil {
+		fmt.Printf("ERROR: GetPricesByDay error: %s\n", err)
+		return nil, err
+	}
+	prices := models.ParsePriceHourInfo(c)
 	return prices, nil
 }
 

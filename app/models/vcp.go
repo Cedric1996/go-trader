@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-13 14:37:24
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-25 11:15:05
+ * @Last Modified time: 2021-09-28 16:40:33
  */
 
 package models
@@ -10,6 +10,8 @@ package models
 import (
 	"context"
 	"fmt"
+	"math"
+	"sort"
 
 	"github.cedric1996.com/go-trader/app/database"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,8 +25,13 @@ type Vcp struct {
 	HighestRatio float64 `bson:"highest_ratio, omitempty"`
 	VcpRatio     float64 `bson:"vcp_ratio, omitempty"`
 	Rps_120      int64   `bson:"rps_120, omitempty"`
+	DealPrice 	 float64 `bson:"deal_price, omitempty"`
 }
 
+type VcpContinue struct {
+	RpsBase      RpsBase `bson:",inline"`
+	Period       int64   `bson:"period, omitempty"`
+}
 type TradeResult struct {
 	Code   string  `bson:"code"`
 	Start  int64   `bson:"start"`
@@ -35,39 +42,44 @@ type TradeResult struct {
 	Net    float64 `bson:"net"`
 }
 
-func GetVcpRange(code string, timestamp, period int64) (float64, error) {
-	dayTime := 24 * 3600
-	endAt := timestamp - int64(dayTime)
-	beginAt := endAt - period*int64(dayTime)
-	highPriceDay, err := getClosePriceByPeriod(SearchOption{Code: code, EndAt: endAt, BeginAt: beginAt})
-	if err != nil {
+func GetVcpRange(code string, endAt, period int64) (float64, error) {
+	// dayTime := 24 * 3600
+	highPriceDay, err := GetStockPriceList(SearchOption{Code: code, EndAt: endAt, Limit: period})
+	if err != nil || len(highPriceDay) <1 {
 		return 0, err
 	}
-	beginAt = highPriceDay.Timestamp
-	lowPriceDay, err := getClosePriceByPeriod(SearchOption{Code: code, EndAt: endAt, BeginAt: beginAt, Reversed: true})
-	if err != nil {
+	sort.Slice(highPriceDay, func(i, j int) bool{
+		return highPriceDay[i].Close < highPriceDay[j].Close
+	})
+	beginAt := highPriceDay[0].Timestamp
+	lowPriceDay, err := GetStockPriceList(SearchOption{Code: code, EndAt: endAt,  BeginAt: beginAt})
+	if err != nil || len(lowPriceDay) <1{
 		return 0, err
 	}
-	return 1 - lowPriceDay.Close/highPriceDay.Close, nil
+	sort.Slice(highPriceDay, func(i, j int) bool{
+		return highPriceDay[i].Close > highPriceDay[j].Close
+	})
+	return lowPriceDay[0].Close/highPriceDay[0].Close, nil
 }
 
-func getClosePriceByPeriod(opt SearchOption) (*StockPriceDay, error) {
-	sortBy := -1
-	if opt.Reversed {
-		sortBy = 1
+func GetVcpRanges(code string, endAt, beginAt int64) (float64, error) {
+	priceDays, err := GetStockPriceList(SearchOption{Code: code, EndAt: endAt, BeginAt: beginAt})
+	if err != nil || len(priceDays) <1 {
+		return 0, err
 	}
-	queryBson := bson.D{{"code", opt.Code}, {"timestamp", bson.D{{"$gte", opt.BeginAt}, {"$lte", opt.EndAt}}}}
-	findOptions := options.FindOne().SetSort(bson.D{{"close", sortBy}})
-	res := database.Collection("stock").FindOne(context.TODO(), queryBson, findOptions)
-	if res.Err() != nil {
-		return nil, res.Err()
+	sort.Slice(priceDays, func(i, j int) bool{
+		return priceDays[i].Timestamp < priceDays[j].Timestamp
+	})
+	maxClose := priceDays[0].Close
+	drawBack := 1.0
+	for i:=1;i<len(priceDays);i++ {
+		if priceDays[i].Close < maxClose {
+			drawBack = math.Min(drawBack, priceDays[i].Close/maxClose)
+		} else {
+			maxClose = math.Max(maxClose, priceDays[i].Close)
+		}
 	}
-	var elem StockPriceDay
-	err := res.Decode(&elem)
-	if err != nil {
-		return nil, err
-	}
-	return &elem, nil
+	return drawBack, nil
 }
 
 func InsertVcp(datas []interface{}) error {
@@ -78,8 +90,17 @@ func InsertVcpNew(datas []interface{}) error {
 	return InsertMany(datas, "vcp_new")
 }
 
+
+func InsertVcpContinue(datas []interface{}) error {
+	return InsertMany(datas, "vcp_continue")
+}
+
 func RemoveVcp(t int64) (err error) {
 	return RemoveMany(t, "vcp")
+}
+
+func RemoveVcpNew(t int64) (err error) {
+	return RemoveMany(t, "vcp_new")
 }
 
 func GetVcp(opt SearchOption) ([]*Vcp, error) {
@@ -111,6 +132,27 @@ func GetVcpNew(opt SearchOption) ([]*Vcp, error) {
 	}
 	for cur.Next(context.TODO()) {
 		var elem Vcp
+		err := cur.Decode(&elem)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, &elem)
+	}
+
+	if err := cur.Err(); err != nil {
+		return results, err
+	}
+	return results, nil
+}
+
+func GetVcpContinue(opt SearchOption) ([]*VcpContinue, error) {
+	var results []*VcpContinue
+	cur, err := GetCursor(opt, "vcp_continue")
+	if err != nil {
+		return nil, err
+	}
+	for cur.Next(context.TODO()) {
+		var elem VcpContinue
 		err := cur.Decode(&elem)
 		if err != nil {
 			return results, err
@@ -226,12 +268,8 @@ func InitVcpTableIndexes(name string) error {
 	indexModel := make([]mongo.IndexModel, 0)
 	indexModel = append(indexModel, mongo.IndexModel{
 		Keys: bson.D{{"timestamp", -1}},
-	}, mongo.IndexModel{
-		Keys: bson.D{{"highest_ratio", -1}},
-	}, mongo.IndexModel{
-		Keys: bson.D{{"vcp_ratio", -1}},
-	}, mongo.IndexModel{
-		Keys: bson.D{{"rps_120", -1}},
+	},  mongo.IndexModel{
+		Keys: bson.D{{"period", -1}},
 	})
 	_, err := database.Collection(name).Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {

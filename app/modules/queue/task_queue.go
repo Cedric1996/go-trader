@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-12 18:08:17
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-12 23:59:46
+ * @Last Modified time: 2021-09-27 20:33:08
  */
 
 package queue
@@ -39,7 +39,7 @@ func (q *TaskQueue) Run() error {
 		go func() {
 			for data := range q.dataChan {
 				if err := q.handleFunc(data); err != nil {
-					break
+					fmt.Printf("handle task error: %v\n", err)
 				}
 			}
 			q.taskSync.Done()

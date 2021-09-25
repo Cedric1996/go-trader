@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-06 15:42:34
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 23:03:53
+ * @Last Modified time: 2021-09-29 00:12:26
  */
 
 package cmd
@@ -34,6 +34,7 @@ var (
 			subCmdTaskMa,
 			subCmdTaskHighLowIndex,
 			subCmdTaskTrueRange,
+			subCmdTaskModule,
 		},
 	}
 
@@ -90,6 +91,12 @@ var (
 		Usage:  "true range and average true range",
 		Action: runTrueRangeFactor,
 	}
+
+	subCmdTaskModule = cli.Command{
+		Name:   "module",
+		Usage:  "init module concept",
+		Action: runInitModule,
+	}
 )
 
 func runRpsFactor(c *cli.Context) error {
@@ -140,10 +147,11 @@ func runGetRps(c *cli.Context) error {
 
 func runHighestFactor(c *cli.Context) error {
 	app.Init()
-	models.InitHighestTableIndexes(60)
+	models.DropHighestRps("highest_60_120")
+	models.InitHighestTableIndexes("60_120")
 	taskQueue := queue.NewTaskQueue("highest", 50, func(data interface{}) error {
 		code := data.(string)
-		f := factor.NewHighestFactor("highest_60", "2021-09-22", 60)
+		f := factor.NewHighestFactor("highest_60_120", "2021-09-27", 60)
 		if err := f.Init(code); err != nil {
 			return err
 		}
@@ -162,7 +170,7 @@ func runHighestFactor(c *cli.Context) error {
 
 func runVerifyRefDate(c *cli.Context) error {
 	app.Init()
-	taskQueue := queue.NewTaskQueue("verify_ref_date", 50, func(data interface{}) error {
+	taskQueue := queue.NewTaskQueue("verify_ref_date", 30, func(data interface{}) error {
 		code := data.(string)
 		if err := service.VerifyRefDate(code); err != nil {
 			return err
@@ -189,14 +197,14 @@ func runTrendFactor(c *cli.Context) error {
 	}
 	taskQueue := queue.NewTaskQueue("trend", 1, func(data interface{}) error {
 		date := data.(string)
-		f := factor.NewTrendFactor(date, 60, 0.9, 0.80, 2.0)
+		f := factor.NewTrendFactor(date, 60, 0.90, 0.70, 2.0)
 		if err := f.Run(); err != nil {
 			return err
 		}
 		return nil
 	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2021-09-24").Unix()
-		tradeDays, err := models.GetTradeDay(true, 700, t)
+		t := util.ParseDate("2021-09-27").Unix()
+		tradeDays, err := models.GetTradeDay(true, 550, t)
 		if err != nil {
 			return
 		}
@@ -204,6 +212,22 @@ func runTrendFactor(c *cli.Context) error {
 			*dateChan <- date.Date
 		}
 	})
+	// taskQueue := queue.NewTaskQueue("trend", 50, func(data interface{}) error {
+	// 	code := data.(string)
+	// 	f := factor.NewTrendFactor("2021-09-27", 60, 0.90, 0.70, 2.0)
+	// 	if err := f.RunByCode(code); err != nil {
+	// 		return err
+	// 	}
+	// 	return nil
+	// }, func(dateChan *chan interface{}) {
+	// 	codes, err := models.GetAllSecurities()
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	for _, code := range codes {
+	// 		*dateChan <- code.Code
+	// 	}
+	// })
 	if err := taskQueue.Run(); err != nil {
 		return err
 	}
@@ -263,6 +287,39 @@ func runTrueRangeFactor(c *cli.Context) error {
 	app.Init()
 	f := factor.NewTrueRangeFactor("2021-08-24", 13)
 	if err := f.InitByCode(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runInitModule(c *cli.Context) error {
+	app.Init()
+	if err := models.DropHighestRps("stock_module"); err != nil {
+		return fmt.Errorf("drop collection: %s", err)
+	}
+	if err := models.InitStockModuleIndexes(); err != nil {
+		return err
+	}
+	taskQueue := queue.NewTaskQueue("module concept", 20, func(data interface{}) error {
+		mod := data.(models.Module)
+		stocks, err := service.GetModulesDetail(mod)
+		if err != nil {
+			return err
+		}
+		if err := models.InsertStockModule(stocks); err != nil {
+			return err
+		}
+		return nil
+	}, func(dateChan *chan interface{}) {
+		modules, err := service.GetModuleList("concept", "")
+		if err != nil {
+			return
+		}
+		for _, mod := range modules {
+			*dateChan <- mod
+		}
+	})
+	if err := taskQueue.Run(); err != nil {
 		return err
 	}
 	return nil

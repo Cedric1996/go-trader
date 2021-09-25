@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-04 13:58:15
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-25 15:31:50
+ * @Last Modified time: 2021-09-28 16:43:13
  */
 
 package strategy
@@ -48,7 +48,7 @@ type TradeUnit struct {
 	Period int64   `bson:"period"`
 	Net    float64 `bson:"net"`
 	Max   float64 `bson:"max"`
-
+	Drawback float64 `bson:"drawback"`
 }
 
 func NewVcpStrategy(name string) *vcp {

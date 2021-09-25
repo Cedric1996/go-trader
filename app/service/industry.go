@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-25 16:35:21
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-08-08 10:04:09
+ * @Last Modified time: 2021-09-26 17:32:26
  */
 package service
 
@@ -22,26 +22,23 @@ import (
  * jq_l2: 聚宽二级行业
  * zjw: 证监会行业
  */
-func GetModuleList(moduleType, code string) error {
+func GetModuleList(moduleType, code string) ([]models.Module, error) {
 	c := &ctx.Context{}
 	if moduleType == "industry" {
 		if err := fetcher.GetIndustryList(c, code); err != nil {
 			fmt.Printf("ERROR: GetIndustryList error: %s\n", err)
-			return err
+			return nil, err
 		}
 	} else {
 		if err := fetcher.GetConcepts(c); err != nil {
 			fmt.Printf("ERROR: GetModules error: %s\n", err)
-			return err
+			return nil, err
 		}
 	}
 	if err := parseModuleInfo(c); err != nil {
-		return err
+		return nil, err
 	}
-	if err := getModulesDetail(c); err != nil {
-		return err
-	}
-	return nil
+	return c.Params["modules"].([]models.Module), nil
 }
 
 func parseModuleInfo(c *ctx.Context) error {
@@ -64,27 +61,19 @@ func parseModuleInfo(c *ctx.Context) error {
 	return nil
 }
 
-func getModulesDetail(c *ctx.Context) error {
-	modules, has := c.Params["modules"].([]models.Module)
-	if !has {
-		return fmt.Errorf("error get modules detail")
+func GetModulesDetail(mod models.Module) ([]interface{}, error) {
+	c := &ctx.Context{}
+	if err := fetcher.GetConceptStock(c, mod.Code, util.Today()); err != nil {
+		return nil, fmt.Errorf("error get concept detail: %s\n", err)
 	}
-	modules = modules[0:10]
-	for _, module := range modules {
-		getModuleDetail(&models.ConceptModule{
-			Module: module,
-			Date:   util.Today(),
+	res := []interface{}{}
+	for _, data := range c.ResBody.GetNoKeyVals(){
+		res = append(res, models.StockModule{
+			Code: data,
+			ModuleName: mod.Name,
+			StartDate: mod.StartDate,
+			Timestamp: util.ParseDate(mod.StartDate).Unix(),
 		})
 	}
-	return nil
-}
-
-func getModuleDetail(module *models.ConceptModule) {
-	c := &ctx.Context{}
-	if err := fetcher.GetConceptStock(c, module.Module.Code, module.Date); err != nil {
-		fmt.Printf("error get concept detail: %s\n", err)
-		return
-	}
-
-	fmt.Printf("get concept detail: %s, %s\n", module, c.ResBody)
+	return res, nil
 }

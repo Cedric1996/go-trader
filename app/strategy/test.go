@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-05 22:14:02
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-25 15:37:10
+ * @Last Modified time: 2021-09-27 17:59:02
  */
 
 package strategy
@@ -115,6 +115,12 @@ func (v *Tester) test(start, end string, posMax,lossMax int) TestResult {
 		if i == len(dates)-1 {
 			break
 		}
+		// vcp, _ := models.GetVcp(models.SearchOption{
+		// 	Timestamp: date.Timestamp,
+		// })
+		// if len(vcp)< 10 {
+		// 	continue
+		// }
 		vcps, _ := models.GetTradeResultByDay(date.Timestamp, v.Name)
 		for i := 0; i < posMax; i++ {
 			if len(vcps) < 1 {

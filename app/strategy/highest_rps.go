@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-06 17:02:05
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-25 11:18:26
+ * @Last Modified time: 2021-09-26 17:40:03
  */
 
 package strategy
@@ -193,9 +193,11 @@ type Pos struct {
 	DealPrice float64 `bson:"dealPrice"`
 	SellPrice float64 `bson:"sellPrice"`
 	LossPrice float64 `bson:"lossPrice"`
+	Period int64 `bson:"period"`
 	RPS_5 int64 `bson:"rps5"`
 	RPS_10 int64 `bson:"rps10"`
 	RPS_20 int64 `bson:"rps20"`
+	Mod string `bson:"mod"`
 }
 
 func (v *highestRps) Pos() ([]*Pos, error) {

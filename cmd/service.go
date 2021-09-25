@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 16:41:52
+ * @Last Modified time: 2021-09-26 17:25:19
  */
 package cmd
 
@@ -32,6 +32,8 @@ var (
 			subcmdPriceInit,
 			subcmdPriceDaily,
 			subcmdPriceClean,
+			subcmdPriceHour,
+			subcmdPriceWeek,
 		},
 	}
 
@@ -76,6 +78,19 @@ var (
 		Usage:  "fetch daily stock price and update stock table",
 		Action: runStockPriceDaily,
 	}
+
+	subcmdPriceHour = cli.Command{
+		Name:   "hour",
+		Usage:  "fetch hour stock price and update stock table",
+		Action: runStockPriceHour,
+	}
+
+	subcmdPriceWeek = cli.Command{
+		Name:   "week",
+		Usage:  "fetch week stock price and update stock table",
+		Action: runStockPriceWeek,
+	}
+
 	subcmdPriceClean = cli.Command{
 		Name:  "clean",
 		Usage: "clean stock price and related data",
@@ -95,8 +110,8 @@ var (
 		Action: runNewPosition,
 	}
 	subcmdCalPosition = cli.Command{
-		Name:   "cal",
-		Usage:  "calculate portfolio",
+		Name:  "cal",
+		Usage: "calculate portfolio",
 		Flags: []cli.Flag{
 			cli.StringFlag{Name: "file,f"},
 			cli.StringFlag{Name: "date,d"},
@@ -142,6 +157,28 @@ func runStockPriceDaily(c *cli.Context) error {
 	// if err := service.VerifyStockPriceDay(); err != nil {
 	// 	return err
 	// }
+	return nil
+}
+
+func runStockPriceWeek(c *cli.Context) error {
+	app.Init()
+	prices, err := service.GetPricesByWeek("300725.XSHE", "2021-10-08", 10)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(prices[0])
+	return nil
+}
+
+func runStockPriceHour(c *cli.Context) error {
+	app.Init()
+	prices, err := service.GetPricesByHour("300725.XSHE", "2021-09-24", 8)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(prices[0])
 	return nil
 }
 

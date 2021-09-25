@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-05 14:10:35
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-24 16:40:33
+ * @Last Modified time: 2021-09-27 16:56:14
  */
 
 package factor
@@ -23,6 +23,7 @@ func CleanFactorByDate(date string) error {
 	factors := []Factor{
 		NewEmaFactor(date, 1),
 		NewHighLowIndexFactor("nh_nl", date),
+		NewHighestFactor("highest", date, 60),
 		NewHighestFactor("highest", date, 120),
 		NewRpsFactor("rps", 120, 0, date),
 		NewTrendFactor(date, 0, 0, 0, 0),
@@ -67,6 +68,7 @@ func cleanFactor(date string, factors []Factor) error {
 func InitFactorByDate(date string) error {
 	factors := []Factor{
 		NewEmaFactor(date, 1),
+		NewHighestFactor("highest", date, 60),
 		NewHighestFactor("highest", date, 120),
 		NewRpsFactor("rps", 120, 85, date),
 		NewHighLowIndexFactor("nh_nl", date),
@@ -79,9 +81,9 @@ func InitFactorByDate(date string) error {
 
 func InitPosByDate(date string) error {
 	factors := []Factor{
+		NewHighestFactor("highest", date, 60),
 		NewHighestFactor("highest", date, 120),
-		NewRpsFactor("rps", 120, 85, date),
-		NewHighestRpsFactor(date, 0.95, 2.0),
+		NewTrendFactor(date, 60, 0.9, 0.80, 2.0),
 	}
 	return initFactor(factors)
 }

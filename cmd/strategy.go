@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-07-27 23:13:32
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-25 15:42:34
+ * @Last Modified time: 2021-09-28 13:51:02
  */
 package cmd
 
@@ -116,15 +116,24 @@ func runVcpPos(c *cli.Context) error {
 	}
 	v := strategy.NewVcpEmaStrategy("",date)
 	datas := []string{}
-	pos, err := v.Pos()
+	pos, modMap, err := v.Pos()
 	if err != nil {
 		return err
 	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 5, 10, ' ', 0)
-	fmt.Fprintln(w, "代码\t名称\t买入\t止盈\t止损\t5日强\t10日强\t20日强\t")
+	fmt.Fprintln(w, "代码\t名称\t天数\t止损\t5日强\t10日强\t20日强\t板块\t")
 	for _, v := range pos {
 		datas = append(datas, v.Code)
-		fmt.Fprintf(w, "%s\t%s\t%.2f\t%.2f\t%.2f\t%d\t%d\t%d\t\n", v.Code, v.Name, v.DealPrice, v.SellPrice, v.LossPrice, v.RPS_5, v.RPS_10, v.RPS_20)
+		fmt.Fprintf(w, "%s\t%s\t%d\t%d\t%d\t%d\t%s\t\n", v.Code, v.Name, v.Period, v.RPS_5, v.RPS_10, v.RPS_20, v.Mod)
+	}
+	fmt.Fprintln(w, "板块名称\t次数\t")
+	// sort.Map(modMap, func(i, j int) bool{
+	// 	return modMap[i] < modMap[j]
+	// })
+	for k, v := range *modMap {
+		if v>1 {
+		fmt.Fprintf(w, "%s\t%d\t\n", k, v)
+		}
 	}
 	w.Flush()
 	if err := service.GenerateVcpFile(datas); err != nil {
@@ -171,19 +180,26 @@ func vcpTrTest(num string, posMax, lossMax int) *testResult{
 	netFunc := func() (float64, float64) {
 		v.Net = 1.0
 		v.DrawBack = 1.0
-		// start := util.ParseDate("2019-04-03") 
 		start := util.ParseDate("2020-01-03") 
-		// end := start.AddDate(2, 5, 19)
-		end := start.AddDate(1, 8, 19)
+		end := start.AddDate(1, 8, 24)
 		for i := 0; i < 1; i++ {
 			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
-			// v.Test(util.ToDate(start.AddDate(0, 0, 7).Unix()), util.ToDate(end.AddDate(0, 0, 7).Unix()))
-			// v.Test(util.ToDate(start.AddDate(0, 0, 14).Unix()), util.ToDate(end.AddDate(0, 0, 14).Unix()),posMax, lossMax)
-			// v.Test(util.ToDate(start.AddDate(0, 0, 21).Unix()), util.ToDate(end.AddDate(0, 0, 21).Unix()))
 			start = start.AddDate(0, 1, 0)
 			end = end.AddDate(0, 1, 0)
 		}
-		fmt.Println("完成测试")
+		// start := util.ParseDate("2020-05-25") 
+		// end := util.ParseDate("2020-07-26") 
+		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
+		// start = util.ParseDate("2020-11-09") 
+		// end = util.ParseDate("2021-02-25") 
+		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
+		// start = util.ParseDate("2021-04-22") 
+		// end = util.ParseDate("2021-07-14") 
+		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
+		// start = util.ParseDate("2019-07-01") 
+		// end = util.ParseDate("2019-10-15") 
+		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
+		// fmt.Println("完成测试")
 		return v.Net, v.DrawBack
 	}
 	netTotals, drawBackTotals := 0.0, 0.0

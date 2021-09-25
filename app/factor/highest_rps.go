@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-09-06 16:16:50
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-06 16:45:56
+ * @Last Modified time: 2021-09-28 14:25:16
  */
 
 package factor
@@ -67,9 +67,8 @@ func (f *HighestRpsFactor) execute() error {
 		if volume := priceDay[0].GetVolume(); volume < f.volume {
 			return nil, errors.New("")
 		}
-
-		isApproached, err := priceDay[0].CheckBreakHighest(code, f.timestamp)
-		if err != nil || !isApproached {
+		isBreak,_, err := priceDay[0].CheckBreakHighest(code, "120", f.timestamp)
+		if err != nil || !isBreak {
 			return nil, errors.New("")
 		}
 		if err := f.valuationFilter(code, 80); err != nil {

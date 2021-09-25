@@ -2,7 +2,7 @@
  * @Author: cedric.jia
  * @Date: 2021-08-18 19:21:28
  * @Last Modified by: cedric.jia
- * @Last Modified time: 2021-09-23 11:00:26
+ * @Last Modified time: 2021-09-27 20:27:41
  */
 
 package factor
@@ -27,6 +27,7 @@ type highLowIndexFactor struct {
 	name      string
 	calDate   string
 	timestamp int64
+	period int64
 }
 
 func NewHighLowIndexFactor(name, calDate string) *highLowIndexFactor {
@@ -34,6 +35,7 @@ func NewHighLowIndexFactor(name, calDate string) *highLowIndexFactor {
 		name:      name,
 		calDate:   calDate,
 		timestamp: util.ParseDate(calDate).Unix(),
+		period: 60,
 	}
 }
 
@@ -57,14 +59,14 @@ func (f *highLowIndexFactor) execute() error {
 		highs, err := models.GetHighestList(models.SearchOption{
 			BeginAt: t2,
 			EndAt:   t1,
-		}, "highest")
+		},fmt.Sprintf("highest_%d",f.period))
 		if err != nil {
 			return nil, err
 		}
 		lows, err := models.GetHighestList(models.SearchOption{
 			BeginAt: t2,
 			EndAt:   t1,
-		}, "lowest")
+		}, fmt.Sprintf("lowest_%d",f.period))
 		if err != nil {
 			return nil, err
 		}
@@ -121,11 +123,11 @@ func (f *highLowIndexFactor) execute() error {
 func (f *highLowIndexFactor) initByCode() error {
 	queue, _ := queue.NewQueue("init new_high_new_low index by code", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
-		highs, err := models.GetHighest(code, 120, f.timestamp, 0)
+		highs, err := models.GetHighest(code, "120", f.timestamp, 0)
 		if err != nil {
 			return nil, err
 		}
-		lows, err := models.GetLowest(code, f.timestamp, 0)
+		lows, err := models.GetLowest(code, "120", f.timestamp, 0)
 		if err != nil {
 			return nil, err
 		}
