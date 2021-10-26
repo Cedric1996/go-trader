@@ -48,9 +48,8 @@ func (f *highestFactor) Run() error {
 
 func (f *highestFactor) Init(code string) error {
 	prices, err := models.GetStockPriceList(models.SearchOption{
-		Code:     code,
-		// Reversed: true,
-		BeginAt: util.ParseDate("2019-03-01").Unix(),
+		Code:    code,
+		BeginAt: util.ParseDate("2019-07-19").Unix(),
 	})
 	if err != nil {
 		return err
@@ -60,35 +59,37 @@ func (f *highestFactor) Init(code string) error {
 		min = math.Inf(1)
 		max = 0.0
 		for _, p := range prices {
-			// min = math.Min(p.Close, min)
+			min = math.Min(p.Close, min)
 			max = math.Max(p.Close, max)
 		}
 		return max, min
 	}
 	highest := []interface{}{}
-	// lowest := []interface{}{}
-	if len(prices) <= 120 {
-		return nil
-	}
-	for i := 60; i < len(prices)-period; i++ {
-		max, _ := calMaxAndMin(prices[i : i+period])
+	lowest := []interface{}{}
+	for i := 0; i < len(prices); i++ {
+		var max, min float64
+		if (len(prices) - i) < period {
+			max, min = calMaxAndMin(prices[i:])
+		} else {
+			max, min = calMaxAndMin(prices[i : i+period])
+		}
 		highest = append(highest, models.Highest{
 			Code:      code,
 			Price:     max,
-			Timestamp: prices[i-period].Timestamp,
+			Timestamp: prices[i].Timestamp,
 		})
-		// lowest = append(lowest, models.Highest{
-		// 	Code:      code,
-		// 	Price:     min,
-		// 	Timestamp: prices[i+period-1].Timestamp,
-		// })
+		lowest = append(lowest, models.Highest{
+			Code:      code,
+			Price:     min,
+			Timestamp: prices[i].Timestamp,
+		})
 	}
-	if err := models.InsertHighest(highest, "highest_60_120"); err != nil {
+	if err := models.InsertHighest(highest, "highest_120"); err != nil {
 		return err
 	}
-	// if err := models.InsertHighest(lowest, fmt.Sprintf("lowest_120",f.period)); err != nil {
-	// 	return err
-	// }
+	if err := models.InsertHighest(lowest, fmt.Sprintf("lowest_%d", f.period)); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -143,10 +144,10 @@ func (f *highestFactor) execute() error {
 			highs[i] = datum.High
 			lows[i] = datum.Low
 		}
-		if err := models.InsertHighest(highs, fmt.Sprintf("highest_%d",f.period)); err != nil {
+		if err := models.InsertHighest(highs, fmt.Sprintf("highest_%d", f.period)); err != nil {
 			return err
 		}
-		if err := models.InsertHighest(lows, fmt.Sprintf("lowest_%d",f.period)); err != nil {
+		if err := models.InsertHighest(lows, fmt.Sprintf("lowest_%d", f.period)); err != nil {
 			return err
 		}
 		return nil

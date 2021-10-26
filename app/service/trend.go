@@ -9,6 +9,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -80,5 +81,71 @@ func GetNewVcp(t int64, vcpMap *map[string]int) error {
 		}
 	}
 	vcpMap = &newMap
+	return nil
+}
+
+func GetNewRps(unix int64) (*map[string]*models.Rps, error) {
+	tradeDay, err := models.GetTradeDay(true, 6, unix)
+	if err != nil || len(tradeDay) != 6 {
+		return nil, err
+	}
+	old, err := models.GetRpsByOpt(models.SearchOption{BeginAt: tradeDay[5].Timestamp, EndAt: tradeDay[1].Timestamp})
+	if err != nil || old == nil {
+		return nil, errors.New("")
+	}
+	new, err := models.GetRpsByOpt(models.SearchOption{Timestamp: tradeDay[0].Timestamp})
+	if err != nil || new == nil {
+		return nil, errors.New("")
+	}
+	newMap := make(map[string]*models.Rps)
+	for _, v := range new {
+		if v.Rps_250 >= 90 || v.Rps_120 >= 90 || v.Rps_60 >= 90 {
+			newMap[v.RpsBase.Code] = v
+		}
+	}
+	for _, v := range old {
+		vaild := v.Rps_250 >= 90 || v.Rps_120 >= 90 || v.Rps_60 >= 90
+		if _, ok := newMap[v.RpsBase.Code]; vaild && ok {
+			delete(newMap, v.RpsBase.Code)
+		}
+	}
+	return &newMap, nil
+}
+
+type highestApproach struct {
+	Code  string   `json:"code"`
+	Name  string   `json:"name"`
+	Dates []string `json:"dates"`
+}
+
+func ExportHighestApproach() error {
+	securities, err := models.GetAllSecurities()
+	if err != nil {
+		return err
+	}
+	results := make([]highestApproach, 0)
+	for _, stock := range securities {
+		datas, err := models.GetHighestApproach(models.SearchOption{Code: stock.Code})
+		if err != nil || datas == nil {
+			continue
+		}
+		dates := []string{}
+		for _, data := range datas {
+			dates = append(dates, data.RpsBase.Date)
+		}
+		results = append(results, highestApproach{
+			Code:  stock.Code,
+			Name:  stock.DisplayName,
+			Dates: dates,
+		})
+	}
+	data, err := json.Marshal(&results)
+	if err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile(".result/highest_approach.json", data, os.ModePerm); err != nil {
+		return err
+	}
 	return nil
 }

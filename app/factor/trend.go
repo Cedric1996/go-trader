@@ -11,11 +11,17 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sync"
 
 	"github.cedric1996.com/go-trader/app/models"
 	"github.cedric1996.com/go-trader/app/modules/queue"
 	"github.cedric1996.com/go-trader/app/service"
 	"github.cedric1996.com/go-trader/app/util"
+)
+
+var (
+	marketCapMap map[string]float64
+	mutex        sync.Mutex
 )
 
 type TrendFactor struct {
@@ -38,6 +44,7 @@ type codeDatum struct {
 }
 
 func NewTrendFactor(calDate string, period int64, highest_ratio, vcp_ratio, volume float64) *TrendFactor {
+	marketCapMap = make(map[string]float64)
 	return &TrendFactor{
 		calDate:       calDate,
 		period:        period,
@@ -49,7 +56,7 @@ func NewTrendFactor(calDate string, period int64, highest_ratio, vcp_ratio, volu
 }
 
 func (f *TrendFactor) Run() error {
-	if err := f.execute(); err != nil {
+	if err := f.executeContinue(); err != nil {
 		return err
 	}
 	return nil
@@ -223,62 +230,84 @@ func (f *TrendFactor) executeByCode(code string) error {
 }
 
 func (f *TrendFactor) executeContinue() error {
-	queue, err := queue.NewQueue("trend", f.calDate, 30, 100, func(data interface{}) (interface{}, error) {
-		code := data.(string)
-		vcps, err := models.GetVcpNew(models.SearchOption{Code: code, Reversed: true})
-		if err != nil || len(vcps) < 1 {
+	rps, err := models.GetRpsByOpt(models.SearchOption{EndAt: f.timestamp})
+	if err != nil || rps == nil {
+		return err
+	}
+	queue, err := queue.NewQueue("trend", f.calDate, 50, 100, func(data interface{}) (interface{}, error) {
+		datum := data.(highestRpsDatum)
+		code := datum.code
+		priceDay, err := models.GetStockPriceList(models.SearchOption{Code: code, EndAt: datum.timestamp, Limit: 10})
+		if err != nil || priceDay == nil {
 			return nil, errors.New("")
 		}
-		dates, _ := models.GetTradeDays(models.SearchOption{Reversed: true, BeginAt: vcps[0].RpsBase.Timestamp})
-		results := []interface{}{}
-		index := 0
-		p := 0
-		for i := 0; i < len(dates); i++ {
-			if index <= len(vcps)-1 && dates[i].Timestamp == vcps[index].RpsBase.Timestamp {
-				p += 1
-				index += 1
-				results = append(results, models.VcpContinue{
-					RpsBase: vcps[index-1].RpsBase,
-					Period:  int64(p),
-				})
-				continue
-			}
-			p = 0
+		isApproached, high, err := priceDay[0].CheckApproachHighest(code, f.period, f.highest_ratio)
+		if err != nil || !isApproached {
+			return nil, errors.New("")
 		}
-		return results, nil
+		max := priceDay[0].Close
+		for _, price := range priceDay {
+			max = math.Max(max, price.Close)
+		}
+		if priceDay[0].Close/max < 0.95 || priceDay[0].Close == max || high <= max {
+			return nil, errors.New("")
+		}
+		if err := f.valuationFilter(code, 50.0); err != nil {
+			return nil, err
+		}
+		// lowest, err := models.GetHighestList(models.SearchOption{Code: code, EndAt: datum.timestamp - 24*3600, Limit: 1}, "lowest_120")
+		// if err != nil || lowest == nil {
+		// 	return nil, errors.New("")
+		// }
+		return models.HighestApproach{
+			RpsBase: models.RpsBase{
+				Code:      code,
+				Timestamp: datum.timestamp,
+				Date:      datum.calDate,
+			},
+			Highest: high,
+			// Lowest:  lowest[0].Price,
+			// Range:   (high - lowest[0].Price) / lowest[0].Price,
+		}, nil
 	}, func(data []interface{}) error {
-		datas := make([]interface{}, 0)
-		for _, v := range data {
-			datas = append(datas, v.([]interface{})...)
-		}
-		if len(datas) == 0 {
-			return nil
-		}
-		if err := models.InsertVcpContinue(datas); err != nil {
+		if err := models.InsertHighestApproach(data); err != nil {
 			return err
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	codes, _ := models.GetAllSecurities()
-	for _, data := range codes {
-		queue.Push(data.Code)
+	for _, data := range rps {
+		if data.Rps_250 >= 90 || data.Rps_120 >= 90 || data.Rps_60 >= 90 {
+			queue.Push(highestRpsDatum{
+				code:      data.RpsBase.Code,
+				calDate:   data.RpsBase.Date,
+				timestamp: data.RpsBase.Timestamp,
+			})
+		}
 	}
 	queue.Close()
 	return nil
 }
 
 func (f *TrendFactor) valuationFilter(code string, marketCap float64) error {
-	datas, err := service.InitFundamental(code, f.calDate, 1)
-	if err != nil {
-		return err
+	var val float64
+	market, ok := marketCapMap[code]
+	if ok {
+		mutex.Lock()
+		val = market
+		mutex.Unlock()
+	} else {
+		datas, err := service.InitFundamental(code, f.calDate, 1)
+		if err != nil {
+			return err
+		}
+		if len(datas) != 1 {
+			return fmt.Errorf("fetch valuation error, code: %v", code)
+		}
+		mutex.Lock()
+		val = datas[0].(models.Valuation).MarketCap
+		marketCapMap[code] = val
+		mutex.Unlock()
 	}
-	if len(datas) != 1 {
-		return fmt.Errorf("fetch valuation error, code: %v", code)
-	}
-	val := datas[0].(models.Valuation).MarketCap
 	if math.Dim(val, marketCap) == 0 {
 		return fmt.Errorf("marketCap is less than %v, code: %v", marketCap, code)
 	}
@@ -294,6 +323,5 @@ func (f *TrendFactor) volumeFilter(prices []*models.StockPriceDay) error {
 	if float64(vol)*close < 0 {
 		return errors.New("")
 	}
-
 	return nil
 }

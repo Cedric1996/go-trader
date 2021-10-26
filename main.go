@@ -42,7 +42,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal("Run go-trader fail!", err)
+		log.Fatalf("Run go-trader fail! %s", err)
 	}
 
 }

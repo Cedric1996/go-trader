@@ -53,6 +53,34 @@ func GetAllSecurities() error {
 	return nil
 }
 
+func GetNewSecurities() ([]interface{}, error) {
+	c := &ctx.Context{}
+	if err := fetcher.GetAllSecurities(c, util.Today()); err != nil {
+		fmt.Printf("error: GetAllSecurities error: %s\n", err)
+		return nil, err
+	}
+	securities, err := parseStockInfo(c)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]interface{}, 0)
+	for _, info := range securities {
+		security := info.(models.Stock)
+		if _, ok := SecuritySet[security.Code]; !ok {
+			SecuritySet[security.Code] = security.StartDate
+			res = append(res, &security)
+		}
+	}
+	if len(res) == 0 {
+		return nil, nil
+	}
+	if err := models.InsertStockInfo(res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func parseStockInfo(c *ctx.Context) ([]interface{}, error) {
 	resBody := c.ResBody
 	code := c.Params["code"]

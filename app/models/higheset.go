@@ -33,11 +33,11 @@ func InitHighestTableIndexes(period string) error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"timestamp", -1}},
 	})
-	_, err := database.Collection( fmt.Sprintf("highest_%s",period)).Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err := database.Collection(fmt.Sprintf("highest_%s", period)).Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}
-	_, err = database.Collection( fmt.Sprintf("highest_%s",period)).Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
+	_, err = database.Collection(fmt.Sprintf("lowest_%s", period)).Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func FindHighest(opt SearchOption) ([]*StockPriceDay, error) {
 	return results, nil
 }
 
-func GetHighest(code ,period string, t, count int64) ([]*Highest, error) {
+func GetHighest(code, period string, t, count int64) ([]*Highest, error) {
 	datas, err := GetHighestList(SearchOption{Code: code, EndAt: t, Limit: count}, fmt.Sprintf("highest_%s", period))
 	if err != nil || len(datas) == 0 {
 		return nil, err
@@ -102,8 +102,8 @@ func GetHighest(code ,period string, t, count int64) ([]*Highest, error) {
 	return datas, nil
 }
 
-func GetLowest(code ,period string, t, count int64) ([]*Highest, error) {
-	datas, err := GetHighestList(SearchOption{Code: code, EndAt: t, Limit: count},  fmt.Sprintf("highest_%s", period))
+func GetLowest(code, period string, t, count int64) ([]*Highest, error) {
+	datas, err := GetHighestList(SearchOption{Code: code, EndAt: t, Limit: count}, fmt.Sprintf("highest_%s", period))
 	if err != nil || len(datas) == 0 {
 		return nil, err
 	}
@@ -162,31 +162,22 @@ func GetHighestList(opt SearchOption, name string) ([]*Highest, error) {
 func (s *StockPriceDay) CheckApproachHighest(code string, period int64, ratio float64) (bool, float64, error) {
 	// filter tradeDay close price goes beyond highest too much
 	t := s.Timestamp
-	highest60, err := GetHighest(code, "60", t-24*3600, 1)
-	if err != nil || highest60 == nil {
+	highest, err := GetHighest(code, "120", t-24*3600, 1)
+	if err != nil || highest == nil {
 		return false, 0, err
 	}
 
-	highest60_120, err := GetHighest(code, "60_120", t-24*3600, 1)
-	if err != nil || highest60_120 == nil {
-		return false, 0, err
-	}
-	// maxClose := math.Max(highest60[0].Price, highest60_120[0].Price)
-	// minClose := math.Min(highest60[0].Price, highest60_120[0].Price)
-
-	highRatio := highest60[0].Price / highest60_120[0].Price
-	// return  s.Close >= maxClose*ratio && s.Close >= minClose && s.Close <= maxClose && highRatio < 1.20, nil
-	high := s.Close / highest60[0].Price
-	return  high >= ratio && high <= 1 && highRatio > 0.90, highRatio, nil
+	high := s.Close / highest[0].Price
+	return high >= ratio && high < 1, highest[0].Price, nil
 }
 
-func (s *StockPriceDay) CheckBreakHighest(code , period string, t int64) (bool, float64, error) {
+func (s *StockPriceDay) CheckBreakHighest(code, period string, t int64) (bool, float64, error) {
 	// filter tradeDay close price goes beyond highest too much
 	highest, err := GetHighest(code, period, t-1, 120)
 	if err != nil || len(highest) < 1 {
 		return false, 0.0, err
 	}
-	sort.Slice(highest, func(i, j int) bool{
+	sort.Slice(highest, func(i, j int) bool {
 		return highest[i].Price > highest[j].Price
 	})
 	isBreak := s.Close > highest[0].Price && s.PreClose < highest[0].Price

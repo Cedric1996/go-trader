@@ -48,9 +48,12 @@ var (
 		Action: runInitIndex,
 	}
 	CmdVcp = cli.Command{
-		Name:   "vcp",
-		Usage:  "get vcp",
-		Action: runGetWeekVcp,
+		Name:  "trend",
+		Usage: "get vcp",
+		Flags: []cli.Flag{
+			cli.StringFlag{Name: "date,d"},
+		},
+		Action: runGetNewHighestRps,
 	}
 	CmdPosition = cli.Command{
 		Name:  "pos",
@@ -65,11 +68,8 @@ var (
 	}
 
 	subcmdPriceInit = cli.Command{
-		Name:  "init",
-		Usage: "init stock price and update stock table",
-		Flags: []cli.Flag{
-			cli.StringFlag{Name: "date,d"},
-		},
+		Name:   "init",
+		Usage:  "init stock price and update stock table",
 		Action: runStockPriceInit,
 	}
 
@@ -137,23 +137,20 @@ func runFetchAllSecurities(c *cli.Context) error {
 func runStockPriceDaily(c *cli.Context) error {
 	app.Init()
 	dates, err := service.FetchStockPriceDayDaily()
-	if err != nil {
+	if err != nil || len(dates) == 0 {
 		return fmt.Errorf("execute fetch daily price fail, please check it: %s", err)
 	}
-	for _, day := range dates {
-		fmt.Printf("begin init stock price by day: %s\n", day)
-		if err := service.InitStockPriceByDay(day); err != nil {
-			return err
-		}
-		t := util.ParseDate(day).Unix()
-		dates, err := models.GetTradeDay(true, 1, t)
-		if err != nil || len(dates) == 0 || dates[0].Timestamp != t {
-			return fmt.Errorf("parse date error: invalid trade date %s", day)
-		}
-		if err := factor.InitFactorByDate(day); err != nil {
-			return err
-		}
+	if err := service.InitStockPriceByDay(dates); err != nil {
+		return err
 	}
+	// t := util.ParseDate(day).Unix()
+	// dates, err := models.GetTradeDay(true, 1, t)
+	// if err != nil || len(dates) == 0 || dates[0].Timestamp != t {
+	// 	return fmt.Errorf("parse date error: invalid trade date %s", day)
+	// }
+	// if err := factor.InitFactorByDate(day); err != nil {
+	// 	return err
+	// }
 	// if err := service.VerifyStockPriceDay(); err != nil {
 	// 	return err
 	// }
@@ -196,15 +193,11 @@ func runStockPriceClean(c *cli.Context) error {
 
 func runStockPriceInit(c *cli.Context) error {
 	app.Init()
-	d := c.String("date")
-	if len(d) == 0 {
-		return fmt.Errorf("please specify clean date")
+	if err := service.InitStockSecurity(); err != nil {
+		return fmt.Errorf("execute init stock security fail, please check it: %s", err)
 	}
-	if err := service.InitStockPriceByDay(d); err != nil {
-		return fmt.Errorf("execute init stock price fail, please check it: %s", err)
-	}
-	if err := factor.InitFactorByDate(d); err != nil {
-		return err
+	if err := models.PruneStockSecurity(); err != nil {
+		return fmt.Errorf("execute init stock security fail, please check it: %s", err)
 	}
 	return nil
 }
@@ -248,19 +241,27 @@ func runGetVcp(c *cli.Context) error {
 	return nil
 }
 
-func runGetWeekVcp(c *cli.Context) error {
+func runGetNewHighestRps(c *cli.Context) error {
 	app.Init()
-	codes, err := service.GetVcpByInterval(util.Today(), 3)
-	if err != nil {
-		return err
-	}
-	datas := []string{}
-	for k, v := range codes {
-		if v >= 3 {
-			datas = append(datas, k)
-		}
-	}
-	if err := service.GenerateVcpFile(datas); err != nil {
+	// date := c.String("date")
+	// var unix int64
+	// if len(date) == 0 {
+	// 	unix = time.Now().AddDate(0, 0, -1).Unix()
+	// } else {
+	// 	unix = util.ParseDate(date).Unix()
+	// }
+	// m, err := service.GetNewRps(unix)
+	// if err != nil {
+	// 	return err
+	// }
+	// datas := []string{}
+	// for k, _ := range *m {
+	// 	datas = append(datas, k)
+	// }
+	// if err := service.GenerateVcpFile(datas); err != nil {
+	// 	return err
+	// }
+	if err := service.ExportHighestApproach(); err != nil {
 		return err
 	}
 	return nil

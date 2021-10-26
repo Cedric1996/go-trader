@@ -9,7 +9,6 @@ package models
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.cedric1996.com/go-trader/app/database"
@@ -54,6 +53,28 @@ func GetAllSecurities() (securities []Stock, err error) {
 	return securities, nil
 }
 
+func PruneStockSecurity() error {
+	ctx := context.Background()
+	securities, err := GetAllSecurities()
+	if err != nil {
+		return err
+	}
+	secMap := make(map[string]string)
+	for _, security := range securities {
+		secMap[security.Code] = security.Code
+	}
+	stocks, err := database.Collection("stock").Distinct(ctx, "code", bson.D{})
+	if err != nil {
+		return err
+	}
+	for _, stock := range stocks {
+		if _, ok := secMap[stock.(string)]; !ok {
+			DeleteStockPriceDayByCode(stock.(string))
+		}
+	}
+	return nil
+}
+
 func GetSecurityByCode(code string) (*Stock, error) {
 	ctx := context.Background()
 	stock := database.Collection("stock_info").FindOne(ctx, bson.D{{"code", code}})
@@ -66,20 +87,7 @@ func GetSecurityByCode(code string) (*Stock, error) {
 }
 
 func InsertStockInfo(stocks []interface{}) error {
-	var err error
-	if err := database.RemoveStockInfo(); err != nil {
-		return err
-	}
-	if len(stocks) == 1 {
-		err = database.InsertOne(stocks[0])
-	} else {
-		err = database.InsertMany(stocks)
-	}
-
-	if err != nil {
-		return fmt.Errorf("insert stocks error: %v", err)
-	}
-	return nil
+	return InsertMany(stocks, "stock_info")
 }
 
 func InsertReinitStockInfo(stocks []interface{}) error {

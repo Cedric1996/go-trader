@@ -28,6 +28,7 @@ var (
 			subCmdTaskRps,
 			subCmdTaskGetRps,
 			subCmdTaskHighest,
+			subCmdTaskLowest,
 			subCmdTaskVerifyRefDate,
 			subCmdTaskTrend,
 			subCmdTaskEma,
@@ -54,6 +55,12 @@ var (
 		Name:   "highest",
 		Usage:  "highest tasks",
 		Action: runHighestFactor,
+	}
+
+	subCmdTaskLowest = cli.Command{
+		Name:   "lowest",
+		Usage:  "lowest tasks",
+		Action: runLowestFactor,
 	}
 
 	subCmdTaskVerifyRefDate = cli.Command{
@@ -101,10 +108,23 @@ var (
 
 func runRpsFactor(c *cli.Context) error {
 	app.Init()
-	// t := util.ParseDate("2020-06-01").Unix()
-	t := util.ParseDate("2019-03-07").Unix()
+	// if err := models.DropCollection("rps"); err != nil {
+	// 	return fmt.Errorf("drop collection: %s", err)
+	// }
+	// if err := models.DropCollection("rps_increase"); err != nil {
+	// 	return fmt.Errorf("drop collection: %s", err)
+	// }
+	// if err := models.InitRpsTableIndexes(); err != nil {
+	// 	return err
+	// }
+	// if err := models.InitRpsIncreaseTableIndexes(); err != nil {
+	// 	return err
+	// }
 
-	tradeDays, err := models.GetTradeDay(true, 300, t)
+	// t := util.TodayUnix()
+	t := util.ParseDate("2020-07-29").Unix()
+
+	tradeDays, err := models.GetTradeDay(true, 250, t)
 	if err != nil {
 		return err
 	}
@@ -147,11 +167,12 @@ func runGetRps(c *cli.Context) error {
 
 func runHighestFactor(c *cli.Context) error {
 	app.Init()
-	models.DropHighestRps("highest_60_120")
-	models.InitHighestTableIndexes("60_120")
+	models.DropCollection("highest_120")
+	models.DropCollection("loweset_120")
+	models.InitHighestTableIndexes("120")
 	taskQueue := queue.NewTaskQueue("highest", 50, func(data interface{}) error {
 		code := data.(string)
-		f := factor.NewHighestFactor("highest_60_120", "2021-09-27", 60)
+		f := factor.NewHighestFactor("highest_120", "2021-10-26", 120)
 		if err := f.Init(code); err != nil {
 			return err
 		}
@@ -165,6 +186,33 @@ func runHighestFactor(c *cli.Context) error {
 	if err := taskQueue.Run(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func runLowestFactor(c *cli.Context) error {
+	app.Init()
+	models.DropCollection("lowest_rps")
+	models.InitLowestRpsTableIndexes()
+	f := factor.NewLowestRpsFactor("2021-10-26")
+	if err := f.Run(); err != nil {
+		return err
+	}
+	// taskQueue := queue.NewTaskQueue("lowest", 50, func(data interface{}) error {
+	// 	code := data.(string)
+	// 	f := factor.NewLowestRpsFactor("2021-10-26")
+	// 	if err := f.Run(); err != nil {
+	// 		return err
+	// 	}
+	// 	return nil
+	// }, func(dateChan *chan interface{}) {
+	// 	stocks, _ := models.GetAllSecurities()
+	// 	for _, stock := range stocks {
+	// 		*dateChan <- stock.Code
+	// 	}
+	// })
+	// if err := taskQueue.Run(); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -189,46 +237,14 @@ func runVerifyRefDate(c *cli.Context) error {
 
 func runTrendFactor(c *cli.Context) error {
 	app.Init()
-	if err := models.DropHighestRps("vcp_new"); err != nil {
+	if err := models.DropCollection("highest_approach"); err != nil {
 		return fmt.Errorf("drop collection: %s", err)
 	}
-	if err := models.InitVcpTableIndexes("vcp_new"); err != nil {
+	if err := models.InittHighestApproachTableIndexes(); err != nil {
 		return err
 	}
-	taskQueue := queue.NewTaskQueue("trend", 1, func(data interface{}) error {
-		date := data.(string)
-		f := factor.NewTrendFactor(date, 60, 0.90, 0.70, 2.0)
-		if err := f.Run(); err != nil {
-			return err
-		}
-		return nil
-	}, func(dateChan *chan interface{}) {
-		t := util.ParseDate("2021-09-27").Unix()
-		tradeDays, err := models.GetTradeDay(true, 550, t)
-		if err != nil {
-			return
-		}
-		for _, date := range tradeDays {
-			*dateChan <- date.Date
-		}
-	})
-	// taskQueue := queue.NewTaskQueue("trend", 50, func(data interface{}) error {
-	// 	code := data.(string)
-	// 	f := factor.NewTrendFactor("2021-09-27", 60, 0.90, 0.70, 2.0)
-	// 	if err := f.RunByCode(code); err != nil {
-	// 		return err
-	// 	}
-	// 	return nil
-	// }, func(dateChan *chan interface{}) {
-	// 	codes, err := models.GetAllSecurities()
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	for _, code := range codes {
-	// 		*dateChan <- code.Code
-	// 	}
-	// })
-	if err := taskQueue.Run(); err != nil {
+	f := factor.NewTrendFactor("2021-10-26", 0, 0.85, 0, 0)
+	if err := f.Run(); err != nil {
 		return err
 	}
 	return nil
@@ -294,7 +310,7 @@ func runTrueRangeFactor(c *cli.Context) error {
 
 func runInitModule(c *cli.Context) error {
 	app.Init()
-	if err := models.DropHighestRps("stock_module"); err != nil {
+	if err := models.DropCollection("stock_module"); err != nil {
 		return fmt.Errorf("drop collection: %s", err)
 	}
 	if err := models.InitStockModuleIndexes(); err != nil {

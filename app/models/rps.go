@@ -25,7 +25,9 @@ type RpsBase struct {
 
 type Rps struct {
 	RpsBase RpsBase `bson:",inline"`
+	Rps_250 int64   `bson:"rps_250, omitempty"`
 	Rps_120 int64   `bson:"rps_120, omitempty"`
+	Rps_60  int64   `bson:"rps_60, omitempty"`
 	Rps_20  int64   `bson:"rps_20, omitempty"`
 	Rps_10  int64   `bson:"rps_10, omitempty"`
 	Rps_5   int64   `bson:"rps_5, omitempty"`
@@ -33,7 +35,9 @@ type Rps struct {
 
 type RpsIncrease struct {
 	RpsBase      RpsBase `bson:",inline"`
+	Increase_250 float64 `bson:"increase_250, omitempty"`
 	Increase_120 float64 `bson:"increase_120, omitempty"`
+	Increase_60  float64 `bson:"increase_60, omitempty"`
 	Increase_20  float64 `bson:"increase_20, omitempty"`
 	Increase_10  float64 `bson:"increase_10, omitempty"`
 	Increase_5   float64 `bson:"increase_5, omitempty"`
@@ -52,7 +56,11 @@ func InitRpsTableIndexes() error {
 	}, mongo.IndexModel{
 		Keys: bson.D{{"code", -1}},
 	}, mongo.IndexModel{
+		Keys: bson.D{{"rps_250", -1}},
+	}, mongo.IndexModel{
 		Keys: bson.D{{"rps_120", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"rps_60", -1}},
 	}, mongo.IndexModel{
 		Keys: bson.D{{"rps_20", -1}},
 	}, mongo.IndexModel{
@@ -72,13 +80,17 @@ func InitRpsIncreaseTableIndexes() error {
 	indexModel = append(indexModel, mongo.IndexModel{
 		Keys: bson.D{{"timestamp", -1}},
 	}, mongo.IndexModel{
-		Keys: bson.D{{"increase_120", -1}},
+		Keys: bson.D{{"rps_250", -1}},
 	}, mongo.IndexModel{
-		Keys: bson.D{{"increase_20", -1}},
+		Keys: bson.D{{"rps_120", -1}},
 	}, mongo.IndexModel{
-		Keys: bson.D{{"increase_10", -1}},
+		Keys: bson.D{{"rps_60", -1}},
 	}, mongo.IndexModel{
-		Keys: bson.D{{"increase_5", -1}},
+		Keys: bson.D{{"rps_20", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"rps_10", -1}},
+	}, mongo.IndexModel{
+		Keys: bson.D{{"rps_5", -1}},
 	})
 	_, err := database.Collection("rps_increase").Indexes().CreateMany(context.Background(), indexModel, &options.CreateIndexesOptions{})
 	if err != nil {
@@ -185,4 +197,13 @@ func DeleteRpsIncrease(timestamp int64) error {
 	}
 	fmt.Printf("delete rps_increase data count: %d\n", results.DeletedCount)
 	return nil
+}
+
+func GetRpsDates() ([]interface{}, error) {
+	ctx := context.Background()
+	tmps, err := database.Collection("rps").Distinct(ctx, "timestamp", bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	return tmps, nil
 }

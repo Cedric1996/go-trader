@@ -77,7 +77,7 @@ func runHighestRpsPos(c *cli.Context) error {
 		return nil
 	}
 	if init {
-		if err := service.InitStockPriceByDay(date); err != nil {
+		if err := service.InitStockPriceByDay([]string{date, date}); err != nil {
 			return fmt.Errorf("execute init stock price fail, please check it: %s", err)
 		}
 		if err := factor.InitPosByDate(date); err != nil {
@@ -114,7 +114,7 @@ func runVcpPos(c *cli.Context) error {
 	if len(date) == 0 {
 		return nil
 	}
-	v := strategy.NewVcpEmaStrategy("",date)
+	v := strategy.NewVcpEmaStrategy("", date)
 	datas := []string{}
 	pos, modMap, err := v.Pos()
 	if err != nil {
@@ -131,8 +131,8 @@ func runVcpPos(c *cli.Context) error {
 	// 	return modMap[i] < modMap[j]
 	// })
 	for k, v := range *modMap {
-		if v>1 {
-		fmt.Fprintf(w, "%s\t%d\t\n", k, v)
+		if v > 1 {
+			fmt.Fprintf(w, "%s\t%d\t\n", k, v)
 		}
 	}
 	w.Flush()
@@ -145,11 +145,11 @@ func runVcpPos(c *cli.Context) error {
 func runVcpTr(c *cli.Context) error {
 	app.Init()
 	name := "vcp_ema_strategy_08"
-	v := strategy.NewVcpEmaStrategy(name,"")
+	v := strategy.NewVcpEmaStrategy(name, "")
 
 	run := c.Bool("run")
 	if run {
-		if err := models.DropHighestRps(name); err != nil {
+		if err := models.DropCollection(name); err != nil {
 			return fmt.Errorf("drop collection: %s", err)
 		}
 		if err := models.InitStrategyIndexes(name); err != nil {
@@ -166,38 +166,37 @@ func runVcpTr(c *cli.Context) error {
 		// res = append(res, vcpTrTest(s, 5, 10000))
 	}
 	for _, r := range res {
-	fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d\n",r.num,  r.net, r.drawBack, r.posMax, r.lossMax)
+		fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d\n", r.num, r.net, r.drawBack, r.posMax, r.lossMax)
 	}
 
 	return nil
 }
 
-
-func vcpTrTest(num string, posMax, lossMax int) *testResult{
+func vcpTrTest(num string, posMax, lossMax int) *testResult {
 	name := fmt.Sprintf("vcp_ema_strategy_%s", num)
 
 	v := strategy.NewTester(name)
 	netFunc := func() (float64, float64) {
 		v.Net = 1.0
 		v.DrawBack = 1.0
-		start := util.ParseDate("2020-01-03") 
+		start := util.ParseDate("2020-01-03")
 		end := start.AddDate(1, 8, 24)
 		for i := 0; i < 1; i++ {
-			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
+			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()), posMax, lossMax)
 			start = start.AddDate(0, 1, 0)
 			end = end.AddDate(0, 1, 0)
 		}
-		// start := util.ParseDate("2020-05-25") 
-		// end := util.ParseDate("2020-07-26") 
+		// start := util.ParseDate("2020-05-25")
+		// end := util.ParseDate("2020-07-26")
 		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
-		// start = util.ParseDate("2020-11-09") 
-		// end = util.ParseDate("2021-02-25") 
+		// start = util.ParseDate("2020-11-09")
+		// end = util.ParseDate("2021-02-25")
 		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
-		// start = util.ParseDate("2021-04-22") 
-		// end = util.ParseDate("2021-07-14") 
+		// start = util.ParseDate("2021-04-22")
+		// end = util.ParseDate("2021-07-14")
 		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
-		// start = util.ParseDate("2019-07-01") 
-		// end = util.ParseDate("2019-10-15") 
+		// start = util.ParseDate("2019-07-01")
+		// end = util.ParseDate("2019-10-15")
 		// v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
 		// fmt.Println("完成测试")
 		return v.Net, v.DrawBack
@@ -210,11 +209,11 @@ func vcpTrTest(num string, posMax, lossMax int) *testResult{
 		drawBackTotals += drawBack
 	}
 	return &testResult{
-		num: num,
-		net:  netTotals/float64(count),
-		drawBack: drawBackTotals/float64(count),
-		posMax: posMax,
-		lossMax: lossMax,
+		num:      num,
+		net:      netTotals / float64(count),
+		drawBack: drawBackTotals / float64(count),
+		posMax:   posMax,
+		lossMax:  lossMax,
 	}
 }
 
@@ -225,7 +224,7 @@ func runHighestRps(c *cli.Context) error {
 	v := strategy.NewHighestRpsStrategy(name, "")
 	run := c.Bool("run")
 	if run {
-		if err := models.DropHighestRps(name); err != nil {
+		if err := models.DropCollection(name); err != nil {
 			return fmt.Errorf("drop collection: %s", err)
 		}
 		if err := models.InitStrategyIndexes(name); err != nil {
@@ -244,24 +243,24 @@ func runHighestRps(c *cli.Context) error {
 		res = append(res, highestRpsTest(s, 5, 1000))
 	}
 	for _, r := range res {
-		fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d, 平均收益: %.3f\n",r.num,  r.net, r.drawBack, r.posMax, r.lossMax, r.netAvg)
-	// chs = append(chs, r.chart)
+		fmt.Printf("策略序号：%s, 总收益: %3f, 最大月亏损: %3f, 最大持仓: %d, 最大亏损数: %d, 平均收益: %.3f\n", r.num, r.net, r.drawBack, r.posMax, r.lossMax, r.netAvg)
+		// chs = append(chs, r.chart)
 	}
 	// v.WinRateByDate("2021-06-01",14)
 	return nil
 }
 
 type testResult struct {
-	num string
-	net float64
+	num      string
+	net      float64
 	drawBack float64
-	posMax int
-	lossMax int
-	netAvg float64
-	chart *charts.Line
+	posMax   int
+	lossMax  int
+	netAvg   float64
+	chart    *charts.Line
 }
 
-func highestRpsTest(num string, posMax, lossMax int) *testResult{
+func highestRpsTest(num string, posMax, lossMax int) *testResult {
 	name := fmt.Sprintf("highest_rps_strategy_%s", num)
 
 	// v := strategy.NewHighestRpsStrategy(name, 90, 90, 0)
@@ -269,17 +268,17 @@ func highestRpsTest(num string, posMax, lossMax int) *testResult{
 	netFunc := func() (float64, float64, float64) {
 		v.Net = 1.0
 		v.DrawBack = 1.0
-		start := util.ParseDate("2019-04-01") 
+		start := util.ParseDate("2019-04-01")
 		// start := util.ParseDate("2019-04-12")
 		// start := util.ParseDate("2019-04-11")
 
-		// start := util.ParseDate("2020-01-01") 
+		// start := util.ParseDate("2020-01-01")
 		// start := util.ParseDate("2019-04-06")
 		// start := util.ParseDate("2019-09-01")
 		// start := util.ParseDate("2021-01-03")
 		end := start.AddDate(2, 5, 20)
 		for i := 0; i < 1; i++ {
-			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()),posMax, lossMax)
+			v.Test(util.ToDate(start.Unix()), util.ToDate(end.Unix()), posMax, lossMax)
 			// v.Test(util.ToDate(start.AddDate(0, 0, 7).Unix()), util.ToDate(end.AddDate(0, 0, 7).Unix()))
 			// v.Test(util.ToDate(start.AddDate(0, 0, 15).Unix()), util.ToDate(end.AddDate(0, 0, 15).Unix()),posMax, lossMax)
 			// v.Test(util.ToDate(start.AddDate(0, 0, 21).Unix()), util.ToDate(end.AddDate(0, 0, 21).Unix()))
@@ -287,9 +286,9 @@ func highestRpsTest(num string, posMax, lossMax int) *testResult{
 			end = end.AddDate(0, 1, 0)
 		}
 		fmt.Println("完成测试")
-		return v.Net, v.DrawBack, v.NetAvg/v.NetCount
+		return v.Net, v.DrawBack, v.NetAvg / v.NetCount
 	}
-	netTotals, drawBackTotals,netAvgs := 0.0, 0.0, 0.0
+	netTotals, drawBackTotals, netAvgs := 0.0, 0.0, 0.0
 	count := 10
 	for i := 0; i < count; i++ {
 		net, drawBack, netAvg := netFunc()
@@ -298,12 +297,12 @@ func highestRpsTest(num string, posMax, lossMax int) *testResult{
 		drawBackTotals += drawBack
 	}
 	return &testResult{
-		num: num,
-		net:  netTotals/float64(count),
-		netAvg: netAvgs/float64(count),
-		drawBack: drawBackTotals/float64(count),
-		posMax: posMax,
-		lossMax: lossMax,
+		num:      num,
+		net:      netTotals / float64(count),
+		netAvg:   netAvgs / float64(count),
+		drawBack: drawBackTotals / float64(count),
+		posMax:   posMax,
+		lossMax:  lossMax,
 		// chart: v.Chart(),
 	}
 }

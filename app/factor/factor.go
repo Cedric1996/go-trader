@@ -71,9 +71,9 @@ func InitFactorByDate(date string) error {
 		NewHighestFactor("highest", date, 60),
 		NewHighestFactor("highest", date, 120),
 		NewRpsFactor("rps", 120, 85, date),
-		NewHighLowIndexFactor("nh_nl", date),
-		NewTrueRangeFactor(date, 13),
-		NewTrendFactor(date, 60, 0.9, 0.80, 2.0),
+		// NewHighLowIndexFactor("nh_nl", date),
+		// NewTrueRangeFactor(date, 13),
+		// NewTrendFactor(date, 60, 0.9, 0.80, 2.0),
 		NewHighestRpsFactor(date, 0.95, 2.0),
 	}
 	return initFactor(factors)

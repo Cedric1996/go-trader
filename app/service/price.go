@@ -46,6 +46,17 @@ func GetPricesByDay(code, date string, count int) ([]*models.Price, error) {
 }
 
 // Count should not be greater than 5000.
+func GetPricesByPeriod(code, begin, end string) ([]*models.Price, error) {
+	c := &ctx.Context{}
+	if err := fetcher.GetPriceWithPeriod(c, code, fetcher.Day, begin, end); err != nil {
+		fmt.Printf("ERROR: GetPriceWithPeriod error: %s\n", err)
+		return nil, err
+	}
+	prices := models.ParsePriceInfo(c)
+	return prices, nil
+}
+
+// Count should not be greater than 5000.
 func GetPricesByHour(code, date string, count int) ([]*models.Price, error) {
 	// date = date + " 10:00:00"
 	c := &ctx.Context{}
@@ -61,26 +72,32 @@ func GetPricesByHour(code, date string, count int) ([]*models.Price, error) {
  * Init stock price date from 2018-01-01 and update
  * Stock table
  */
-func InitStockPriceByDay(date string) error {
-	isInit := false
-	initStockQueue, err := queue.NewQueue("init", date, 100, 1000, func(data interface{}) (interface{}, error) {
+func InitStockPriceByDay(dates []string) error {
+	initStockQueue, err := queue.NewQueue("init", dates[0], 50, 1000, func(data interface{}) (interface{}, error) {
 		code := data.(string)
-		stocks, err := GetPricesByDay(code, date, 1)
+		stocks, err := GetPricesByPeriod(code, dates[0], dates[len(dates)-1])
 		if err != nil || len(stocks) == 0 {
 			return nil, errors.New("")
 		}
-		return models.StockPriceDay{
-			Code:  code,
-			Price: *stocks[0],
-		}, nil
-	}, func(datas []interface{}) error {
+		datas := make([]interface{}, len(stocks))
+		for i, data := range stocks {
+			datas[i] = models.StockPriceDay{
+				Code:  code,
+				Price: *data,
+			}
+		}
+		return datas, nil
+	}, func(data []interface{}) error {
+		datas := make([]interface{}, 0)
+		for _, v := range data {
+			datas = append(datas, v.([]interface{})...)
+		}
 		if len(datas) == 0 {
 			return nil
 		}
 		if err := models.InsertStockPriceDay(datas); err != nil {
 			return err
 		}
-		isInit = true
 		return nil
 	})
 	if err != nil {
@@ -90,14 +107,60 @@ func InitStockPriceByDay(date string) error {
 		initStockQueue.Push(i)
 	}
 	initStockQueue.Close()
-	tradeDayToInsert := []interface{}{models.TradeDay{
-		Date:      date,
-		Timestamp: util.ToTimeStamp(date),
-		IsInit:    isInit,
-	}}
+	tradeDayToInsert := []interface{}{}
+	for _, date := range dates {
+		tradeDayToInsert = append(tradeDayToInsert, models.TradeDay{
+			Date:      date,
+			Timestamp: util.ToTimeStamp(date),
+			IsInit:    true,
+		})
+
+	}
 	if err := models.InsertTradeDay(tradeDayToInsert); err != nil {
 		return fmt.Errorf("update lastest trade day error: %s", err)
 	}
+	return nil
+}
+
+func InitStockSecurity() error {
+	stocks, err := GetNewSecurities()
+	if err != nil {
+		return err
+	}
+	initStockQueue, err := queue.NewQueue("init", "", 10, 100, func(data interface{}) (interface{}, error) {
+		code := data.(string)
+		stocks, err := GetPricesByDay(code, util.Today(), 1000)
+		if err != nil || len(stocks) == 0 {
+			return nil, errors.New("")
+		}
+		datas := make([]interface{}, len(stocks))
+		for i, data := range stocks {
+			datas[i] = models.StockPriceDay{
+				Code:  code,
+				Price: *data,
+			}
+		}
+		return datas, nil
+	}, func(data []interface{}) error {
+		datas := make([]interface{}, 0)
+		for _, v := range data {
+			datas = append(datas, v.([]interface{})...)
+		}
+		if len(datas) == 0 {
+			return nil
+		}
+		if err := models.InsertStockPriceDay(datas); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, stock := range stocks {
+		initStockQueue.Push(stock.(*models.Stock).Code)
+	}
+	initStockQueue.Close()
 	return nil
 }
 

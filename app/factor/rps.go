@@ -69,8 +69,8 @@ func (f *rpsFactor) Clean() error {
 
 func (f *rpsFactor) get() error {
 	var max int64
-	max = 120
-	p := []int64{5, 10, 20, max}
+	max = 250
+	p := []int64{5, 10, 20, 60, 120, max}
 	periods := make(map[string]int64)
 	periods["period_0"] = f.timestamp
 
@@ -136,23 +136,30 @@ func (f *rpsFactor) run() error {
 		rpsIncrease := &models.RpsIncrease{
 			RpsBase: datum.rpsBase,
 		}
+		if math.Dim(val["period_250"], 1.0) < 0.0000001 {
+			rpsIncrease.Increase_250 = -1
+		} else {
+			rpsIncrease.Increase_250 = (val["period_0"] - val["period_250"]) / val["period_250"]
+		}
 		if math.Dim(val["period_120"], 1.0) < 0.0000001 {
 			rpsIncrease.Increase_120 = -1
 		} else {
 			rpsIncrease.Increase_120 = (val["period_0"] - val["period_120"]) / val["period_120"]
-
+		}
+		if math.Dim(val["period_60"], 1.0) < 0.0000001 {
+			rpsIncrease.Increase_60 = -1
+		} else {
+			rpsIncrease.Increase_60 = (val["period_0"] - val["period_60"]) / val["period_60"]
 		}
 		if math.Dim(val["period_20"], 1.0) < 0.0000001 {
 			rpsIncrease.Increase_20 = -1
 		} else {
 			rpsIncrease.Increase_20 = (val["period_0"] - val["period_20"]) / val["period_20"]
-
 		}
 		if math.Dim(val["period_10"], 1.0) < 0.0000001 {
 			rpsIncrease.Increase_10 = -1
 		} else {
 			rpsIncrease.Increase_10 = (val["period_0"] - val["period_10"]) / val["period_10"]
-
 		}
 		if math.Dim(val["period_5"], 1.0) < 0.0000001 {
 			rpsIncrease.Increase_5 = -1
@@ -186,7 +193,7 @@ func (f *rpsFactor) run() error {
  * Rps can be specified by period and trade_date
  */
 func (f *rpsFactor) calculate() error {
-	p := []int64{5, 10, 20, 120}
+	p := []int64{5, 10, 20, 60, 120, 250}
 	rpsMap := make(map[string]*models.Rps)
 	for code, _ := range service.SecuritySet {
 		rpsMap[code] = &models.Rps{
@@ -211,6 +218,11 @@ func (f *rpsFactor) calculate() error {
 				datum := rpsIncreaseDatas[i]
 				rpsMapMutex.Lock()
 				rps := rpsMap[datum.RpsBase.Code]
+				if rps == nil {
+					fmt.Printf("no rps code: %s\n", datum.RpsBase.Code)
+					rpsMapMutex.Unlock()
+					continue
+				}
 				switch val {
 				case 5:
 					rps.Rps_5 = int64((total - i) * 100 / total)
@@ -218,8 +230,12 @@ func (f *rpsFactor) calculate() error {
 					rps.Rps_10 = int64((total - i) * 100 / total)
 				case 20:
 					rps.Rps_20 = int64((total - i) * 100 / total)
+				case 60:
+					rps.Rps_60 = int64((total - i) * 100 / total)
 				case 120:
 					rps.Rps_120 = int64((total - i) * 100 / total)
+				case 250:
+					rps.Rps_250 = int64((total - i) * 100 / total)
 				}
 				rpsMapMutex.Unlock()
 			}

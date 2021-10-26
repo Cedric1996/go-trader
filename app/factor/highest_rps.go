@@ -26,10 +26,12 @@ type HighestRpsFactor struct {
 }
 
 type highestRpsDatum struct {
-	code   string
-	rps_20 int64
-	rps_10 int64
-	rps_5  int64
+	code      string
+	calDate   string
+	timestamp int64
+	rps_250   int64
+	rps_120   int64
+	rps_60    int64
 }
 
 func NewHighestRpsFactor(calDate string, highest_ratio, volume float64) *HighestRpsFactor {
@@ -53,36 +55,40 @@ func (f *HighestRpsFactor) Clean() error {
 }
 
 func (f *HighestRpsFactor) execute() error {
-	rps, err := models.GetRps(f.timestamp, 120)
+	rps, err := models.GetRpsByOpt(models.SearchOption{EndAt: f.timestamp})
 	if err != nil || rps == nil {
 		return err
 	}
 	queue, err := queue.NewQueue("highest_rps", f.calDate, 50, 1000, func(data interface{}) (interface{}, error) {
 		datum := data.(highestRpsDatum)
 		code := datum.code
-		priceDay, err := models.GetStockPriceList(models.SearchOption{Code: code, Timestamp: f.timestamp})
-		if err != nil || priceDay == nil {
+		timestamp := datum.timestamp
+		rpsIncrease, err := models.GetRpsIncrease(models.SearchOption{Code: code, Timestamp: timestamp})
+		if err != nil || rpsIncrease == nil {
 			return nil, errors.New("")
 		}
-		if volume := priceDay[0].GetVolume(); volume < f.volume {
+		highest, err := models.GetHighestList(models.SearchOption{Code: code, BeginAt: timestamp}, "highest_120")
+		if err != nil || len(highest) < 120 {
 			return nil, errors.New("")
 		}
-		isBreak,_, err := priceDay[0].CheckBreakHighest(code, "120", f.timestamp)
-		if err != nil || !isBreak {
+		prices, err := models.GetStockPriceList(models.SearchOption{Code: code, Timestamp: timestamp})
+		if err != nil || prices == nil {
 			return nil, errors.New("")
 		}
-		if err := f.valuationFilter(code, 80); err != nil {
-			return nil, errors.New("")
-		}
+		highestPrice := highest[len(highest)-120]
 		return models.HighestRps{
 			RpsBase: models.RpsBase{
 				Code:      code,
-				Timestamp: f.timestamp,
-				Date:      f.calDate,
+				Timestamp: timestamp,
+				Date:      datum.calDate,
 			},
-			Rps_20: datum.rps_20,
-			Rps_10: datum.rps_10,
-			Rps_5:  datum.rps_5,
+			Rps_250:         datum.rps_250,
+			Rps_120:         datum.rps_120,
+			Rps_60:          datum.rps_60,
+			RpsIncrease_250: rpsIncrease[0].Increase_250,
+			RpsIncrease_120: rpsIncrease[0].Increase_120,
+			RpsIncrease_60:  rpsIncrease[0].Increase_60,
+			Net:             (highestPrice.Price - prices[0].Price.Close) / prices[0].Price.Close,
 		}, nil
 	}, func(data []interface{}) error {
 		if err := models.InsertHighestRps(data); err != nil {
@@ -94,12 +100,16 @@ func (f *HighestRpsFactor) execute() error {
 		return err
 	}
 	for _, data := range rps {
-		queue.Push(highestRpsDatum{
-			code:   data.RpsBase.Code,
-			rps_20: data.Rps_20,
-			rps_10: data.Rps_10,
-			rps_5:  data.Rps_5,
-		})
+		if data.Rps_250 >= 90 || data.Rps_120 >= 90 || data.Rps_60 >= 90 {
+			queue.Push(highestRpsDatum{
+				code:      data.RpsBase.Code,
+				calDate:   data.RpsBase.Date,
+				timestamp: data.RpsBase.Timestamp,
+				rps_250:   data.Rps_250,
+				rps_120:   data.Rps_120,
+				rps_60:    data.Rps_60,
+			})
+		}
 	}
 	queue.Close()
 	return nil
